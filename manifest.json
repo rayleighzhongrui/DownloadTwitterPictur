@@ -1,0 +1,27 @@
+{
+    "manifest_version": 3,
+    "name": "点赞下载推特原图",
+    "version": "0.1",
+    "description": "点赞推特可立即下载原图，默认文件名为博主+时间; Download Twitter Origin Image with Favorites",
+    "icons": {
+      "48": "images/icon.png"
+    },
+    "permissions": [ 
+      "downloads"
+    ],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["*://*.twitter.com/*"],
+        "js": ["content.js"]
+      }
+    ],
+    "action": {
+      "default_icon": "images/icon.png",
+      "default_popup": "popup.html",
+      "default_title": "Twitter Image Downloader"
+    }
+  }
+  
