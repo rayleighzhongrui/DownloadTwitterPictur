@@ -16,7 +16,7 @@
       {
         "matches": [
           "*://*.twitter.com/*",
-          "*://*.x.com/*"  // 新增对 x.com 的支持
+          "*://*.x.com/*"  
         ],
         "js": ["content.js"]
       }
