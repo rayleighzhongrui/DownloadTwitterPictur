@@ -1,30 +1,44 @@
 {
-    "manifest_version": 3,
-    "name": "点赞下载推特原图",
-    "version": "0.51",
-    "description": "点赞推特可立即下载原图，默认文件名为博主+时间; Download Twitter Origin Image with Favorites",
-    "icons": {
-      "48": "images/icon.png"
-    },
-    "permissions": [ 
-      "downloads"
-    ],
-    "background": {
-      "service_worker": "background.js"
-    },
-    "content_scripts": [
-      {
-        "matches": [
-          "*://*.twitter.com/*",
-          "*://*.x.com/*"  
-        ],
-        "js": ["content.js"]
-      }
-    ],
-    "action": {
-      "default_icon": "images/icon.png",
-      "default_popup": "popup.html",
-      "default_title": "Twitter Image Downloader"
+  "manifest_version": 3,
+  "name": "点赞下载推特原图",
+  "version": "0.51",
+  "description": "点赞推特可立即下载原图，默认文件名为博主+时间; Download Twitter Origin Image with Favorites",
+  "icons": {
+    "48": "images/icon.png"
+  },
+  "permissions": [
+    "downloads",
+    "declarativeNetRequest",
+    "activeTab"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.twitter.com/*",
+        "*://*.x.com/*",  
+        "*://*.pixiv.net/*"
+      ],
+      "js": ["content.js"]
     }
+  ],
+  "action": {
+    "default_icon": "images/icon.png",
+    "default_popup": "popup.html",
+    "default_title": "Twitter Image Downloader"
+  },
+  "host_permissions": [
+    "*://*.pixiv.net/*",
+    "*://i.pximg.net/*",
+    "*://pixiv.zhongrui.app/*"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [{
+      "id": "ruleset_1",
+      "enabled": true,
+      "path": "rules.json"
+    }]
   }
-  
+}
