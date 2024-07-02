@@ -51,28 +51,42 @@ document.addEventListener('click', function(e) {
   const bookmarkButton = e.target.closest('[class*=bookmark]') || e.target.closest('button.sc-kgq5hw-0.fgVkZi');
   if (bookmarkButton) {
     console.log('已捕获Pixiv点赞');
-    console.log(bookmarkButton);
-    let illustId = bookmarkButton.getAttribute('data-gtm-recommend-illust-id');
-    if (!illustId) {
-      const url = window.location.href;
-      console.log('url:',url);
+    const url = window.location.href;
+    let illustId;
+    let images = [];
+
+    if (url.startsWith('https://www.pixiv.net/artworks/')) {
+      // Pixiv作品页面逻辑
       const matches = url.match(/artworks\/(\d+)/);
       illustId = matches ? matches[1] : 'unknown_id';
+      const figure = document.querySelector('figure');
+      if (figure) {
+        images = figure.querySelectorAll('img');
+      }
+      console.log('pic', images)
+    } else if (url.startsWith('https://www.pixiv.net/')) {
+      // Pixiv首页逻辑
+      const nearestIllust = e.target.closest('[type="illust"]');
+      if (nearestIllust) {
+        illustId = nearestIllust.getAttribute('data-gtm-value');
+        images = nearestIllust.querySelectorAll('img');
+      }
+    } else {
+      // 其他页面逻辑，暂时同Pixiv首页逻辑
+      console.log('当前页面为其他页面，按Pixiv首页逻辑处理');
+      const nearestIllust = e.target.closest('[type="illust"]');
+      if (nearestIllust) {
+        illustId = nearestIllust.getAttribute('data-gtm-value');
+        images = nearestIllust.querySelectorAll('img');
+      }
     }
-    console.log('获取的作品ID:', illustId);
 
-    //let PivContainer = e.target.closest('[type="illust"]') || e.target.closest('[role="presentation"]') || e.target.closest('figure') ||  document.getElementById('targetElement');
-    let PivContainer = document.querySelectorAll('figure');
-    //let images = PivContainer.querySelectorAll('img') || PivContainer.querySelectorAll('a[href*="img-original"]');
-    PivContainer.forEach((figure) => {
-      console.log('find the figure element', figure);
-      const images = figure.querySelectorAll('img');
-      console.log('image url', images);
+    console.log('获取的作品ID:', illustId);
 
     images.forEach((img) => {
       console.log('检测到的图片URL:', img.src);
       let imgUrl = new URL(img.src);
-      
+
       const matches = imgUrl.pathname.match(/img\/(\d{4})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d+)_/);
       if (matches) {
         const [_, year, month, day, hour, minute, second, illustId] = matches;
@@ -122,6 +136,5 @@ document.addEventListener('click', function(e) {
         console.log('未找到匹配的时间戳和作品ID');
       }
     });
-  });
   }
 }, true);
