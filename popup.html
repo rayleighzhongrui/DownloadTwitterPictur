@@ -2,40 +2,114 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>点赞下载推特原图</title>
+    <title>文件名格式设置</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
+            background-color: #1c1c1c;
+            color: #fb6102;
+            text-align: center;
+            padding: 20px;
+            width: 400px; /* 调整弹出窗口的宽度 */
             background: url('images/image.png') no-repeat center center fixed;
             background-size: cover;
-            color: #f76a06;
-            text-align: left;
-            width: 300px; /* 设置适合的宽度 */
         }
-        .container {
-            background: rgba(231, 246, 235, 0.63); /* 半透明黑色背景 */
-            padding: 20px;
-            margin: 10px;
-            border-radius: 10px;
-        }
-        h1 {
-            font-size: 24px;
+        h2 {
+            font-size: 20px;
             margin-bottom: 10px;
         }
-        p {
-            font-size: 16px;
-            line-height: 1.5;
+        .format-container {
+            margin-bottom: 20px;
+        }
+        .format-selection {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            max-width: 100%;
+        }
+        .format-option {
+            background-color: #333;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            border: 1px solid #444;
+        }
+        .format-option.selected {
+            background-color: #f8f8f8;
+        }
+        #saveButton {
+            background-color: #fdfcfb;
+            color: rgb(251, 89, 2);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+        #saveButton:hover {
+            background-color: #b5f88b;
+        }
+        .example-container {
+            margin-top: 20px;
+            text-align: left;
+            font-size: 14px;
+            background-color: #fafcf9;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success-message {            
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            background: url('images/success.png') no-repeat center center fixed;
+            background-size: cover;
+            z-index: 1000;
+            color: rgb(249, 113, 2);
+            font-size: 24px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>点赞下载推特原图</h1>
-        <p>点赞推特可立即下载原图，默认文件名为博主+时间。</p>
-        <p>Download Twitter Origin Image with Favorites</p>
-        <p>Write by 鐘子鑒，www.zhongrui.app</p>
+    <h2>推特文件名格式（TwitterFileFormat）</h2>
+    <div class="format-container">
+        <div class="format-selection" id="twitterFormat">
+            <div class="format-option" data-value="account">推特账号(account)</div>
+            <div class="format-option" data-value="tweetId">推特ID(twitterID)</div>
+            <div class="format-option" data-value="downloadDate">下载时间(DownloadDate)</div>
+        </div>
     </div>
+
+    <h2>Pixiv文件名格式</h2>
+    <div class="format-container">
+        <div class="format-selection" id="pixivFormat">
+            <div class="format-option" data-value="illustId">作品ID(illustID)</div>
+            <div class="format-option" data-value="downloadDate">下载时间(DownloadDate)</div>
+        </div>
+    </div>
+
+    <div class="example-container">
+        <strong>推特文件名示例(TwitterExample):</strong>
+        <div id="twitterExample">推特账号_推特ID_20230811.jpg</div>
+        <br>
+        <strong>Pixiv文件名示例(pixivExample):</strong>
+        <div id="pixivExample">作品ID_20230811.jpg</div>
+    </div>
+
+    <button id="saveButton">保存(save)</button>
+
+    <div id="successMessage" class="success-message">
+        保存成功(Save Success)！
+    </div>
+
+
+    <!-- 引入外部JS文件 -->
+    <script src="popup.js"></script>
 </body>
 </html>

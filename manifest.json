@@ -1,15 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "点赞下载推特原图",
-  "version": "0.51",
-  "description": "点赞推特可立即下载原图，默认文件名为博主+时间; Download Twitter Origin Image with Favorites",
+  "name": "点赞下载推特&PIXIV原图(DownloadTwitterAndPixivOriginImageByFavorite)",
+  "version": "0.80",
+  "description": "在推特、PIXIV中点赞可立即下载原图，默认文件名为博主+推文ID+时间; Download Twitter and Pixiv Origin Image with Favorites",
   "icons": {
     "48": "images/icon.png"
   },
   "permissions": [
     "downloads",
     "declarativeNetRequest",
-    "activeTab"
+    "activeTab",
+    "storage"
   ],
   "background": {
     "service_worker": "background.js"
@@ -27,7 +28,7 @@
   "action": {
     "default_icon": "images/icon.png",
     "default_popup": "popup.html",
-    "default_title": "Twitter Image Downloader"
+    "default_title": "Twitter&Pixiv Image Downloader"
   },
   "host_permissions": [
     "*://*.pixiv.net/*",
