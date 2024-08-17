@@ -8,15 +8,66 @@
             font-family: Arial, sans-serif;
             background-color: #1c1c1c;
             color: #fb6102;
-            text-align: center;
+            text-align: left;
             padding: 20px;
-            width: 400px; /* 调整弹出窗口的宽度 */
+            width: 350px;
             background: url('images/image.png') no-repeat center center fixed;
             background-size: cover;
         }
         h2 {
             font-size: 20px;
             margin-bottom: 10px;
+        }
+        .switch-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 16px;
+            background-color: #f2f2f2;
+            padding: 5px;
+            border-radius: 5px;
+            width: auto;
+            max-width: 100px; /* 容器最大宽度进一步缩小 */
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px; /* 缩小开关宽度 */
+            height: 24px; /* 保持开关的高度 */
+            margin-left: auto;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px; /* 调整为与开关高度一致的圆角 */
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px; /* 保持滑块高度 */
+            width: 18px; /* 保持滑块宽度 */
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #fb6102;
+        }
+        input:checked + .slider:before {
+            transform: translateX(16px); /* 调整滑块的移动距离 */
         }
         .format-container {
             margin-bottom: 20px;
@@ -77,6 +128,25 @@
     </style>
 </head>
 <body>
+
+    <!-- Twitter开关 -->
+    <div class="switch-container">
+        <span>Twitter</span>
+        <label class="switch">
+            <input type="checkbox" id="twitterSwitch">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <!-- Pixiv开关 -->
+    <div class="switch-container">
+        <span>Pixiv</span>
+        <label class="switch">
+            <input type="checkbox" id="pixivSwitch">
+            <span class="slider"></span>
+        </label>
+    </div>
+
     <h2>推特文件名格式（TwitterFileFormat）</h2>
     <div class="format-container">
         <div class="format-selection" id="twitterFormat">
@@ -107,7 +177,6 @@
     <div id="successMessage" class="success-message">
         保存成功(Save Success)！
     </div>
-
 
     <!-- 引入外部JS文件 -->
     <script src="popup.js"></script>

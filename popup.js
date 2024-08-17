@@ -56,14 +56,18 @@ function showSuccessMessage() {
     }, 2000); // 显示2秒钟
 }
 
-// 保存用户选择的格式
+// 保存用户选择的格式和开关状态
 document.getElementById('saveButton').addEventListener('click', function() {
     const twitterFormats = getSelectedFormats('twitterFormat');
     const pixivFormats = getSelectedFormats('pixivFormat');
+    const twitterSwitchState = document.getElementById('twitterSwitch').checked;
+    const pixivSwitchState = document.getElementById('pixivSwitch').checked;
 
     chrome.storage.sync.set({
         twitterFilenameFormat: twitterFormats,
-        pixivFilenameFormat: pixivFormats
+        pixivFilenameFormat: pixivFormats,
+        twitterSwitchActive: twitterSwitchState,
+        pixivSwitchActive: pixivSwitchState
     }, function() {
         showSuccessMessage(); // 显示保存成功提示
     });
@@ -82,14 +86,22 @@ function initSelection(containerId, storedFormats) {
     updateExample(containerId, exampleId);
 }
 
+// 从存储中加载用户的选择并初始化界面
+chrome.storage.sync.get(['twitterFilenameFormat', 'pixivFilenameFormat', 'twitterSwitchActive', 'pixivSwitchActive'], function(result) {
+    const twitterFormats = result.twitterFilenameFormat || ['account', 'tweetId'];
+    const pixivFormats = result.pixivFilenameFormat || ['illustId'];
+    
+    // 默认将开关设置为打开（true）
+    const twitterSwitch = (typeof result.twitterSwitchActive === 'undefined') ? true : result.twitterSwitchActive;
+    const pixivSwitch = (typeof result.pixivSwitchActive === 'undefined') ? true : result.pixivSwitchActive;
+
+    initSelection('twitterFormat', twitterFormats);
+    initSelection('pixivFormat', pixivFormats);
+
+    document.getElementById('twitterSwitch').checked = twitterSwitch;
+    document.getElementById('pixivSwitch').checked = pixivSwitch;
+});
+
 // 绑定事件处理
 toggleSelection('twitterFormat', 'twitterExample');
 toggleSelection('pixivFormat', 'pixivExample');
-
-// 从存储中加载用户的选择并初始化界面
-chrome.storage.sync.get(['twitterFilenameFormat', 'pixivFilenameFormat'], function(result) {
-    const twitterFormats = result.twitterFilenameFormat || ['account', 'tweetId'];
-    const pixivFormats = result.pixivFilenameFormat || ['illustId'];
-    initSelection('twitterFormat', twitterFormats);
-    initSelection('pixivFormat', pixivFormats);
-});
