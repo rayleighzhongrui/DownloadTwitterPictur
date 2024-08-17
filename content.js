@@ -6,16 +6,20 @@ document.addEventListener('click', function(e) {
       console.log('已捕获Twitter点赞');
       const tweetContainer = e.target.closest('[data-testid="cellInnerDiv"]');
       if (tweetContainer) {
-          const usernameSpans = tweetContainer.querySelectorAll('[data-testid="User-Name"] span');
-          let authorIdParts = [];
+        const usernameSpans = tweetContainer.querySelectorAll('[data-testid="User-Name"] span');
+        let authorId = 'unknown_author';  // 默认作者ID
 
-          usernameSpans.forEach(span => {
-              authorIdParts.push(span.textContent.trim());
-          });
-
-          authorIdParts = authorIdParts.slice(1, -1);
-          let authorId = authorIdParts.join('_');
-          authorId = authorId || 'unknown_author';
+        // 遍历所有span，寻找包含 "@" 的项
+        usernameSpans.forEach(span => {
+            const textContent = span.textContent.trim();
+            if (textContent.includes('@')) {
+                authorId = textContent;  // 找到包含 "@" 的文本，即为作者ID
+            }
+        });
+          //console.log('账号信息', authorIdParts)
+          //authorIdParts = authorIdParts.slice(3, -1);
+          //let authorId = authorIdParts.join('_');
+          //authorId = authorId || 'unknown_author';
 
           console.log('获取的作者ID:', authorId);
           
