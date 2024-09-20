@@ -150,7 +150,8 @@ function pixivClickListener(e) {
                 }
             }
         } else if (url.startsWith('https://www.pixiv.net/')) {
-            const nearestIllust = e.target.closest('[type="illust"]');
+            //const nearestIllust = e.target.closest('[type="illust"]');
+            const nearestIllust = e.target.closest('[class = "sc-iasfms-3 gZhyZu"]');
             if (nearestIllust) {
                 illustId = nearestIllust.getAttribute('data-gtm-value');
                 images = nearestIllust.querySelectorAll('img');
@@ -166,6 +167,7 @@ function pixivClickListener(e) {
 
         console.log('获取的作品ID:', illustId);
         console.log('作品图片总数:', totalImages);
+        console.log('图片URL:',images)
 
         const checkAndSendMessage = (url, illustId, index, totalImages, isRetry) => {
             fetch(url, { method: 'HEAD' })
