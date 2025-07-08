@@ -127,7 +127,7 @@ function handlePixivFunctionality(isActive) {
 function pixivClickListener(e) {
     console.log('捕获到Pixiv点击事件');
 
-    const bookmarkButton = e.target.closest('[class*=bookmark]') || e.target.closest('button.sc-kgq5hw-0.fgVkZi');
+    const bookmarkButton = e.target.closest('[class*=bookmark]') || e.target.closest('[data-ga4-label="bookmark_button"]') || e.target.closest('button.sc-kgq5hw-0.fgVkZi');
     if (bookmarkButton) {
         console.log('已捕获Pixiv点赞');
         const url = window.location.href;
