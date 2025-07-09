@@ -150,11 +150,18 @@ function pixivClickListener(e) {
                 }
             }
         } else if (url.startsWith('https://www.pixiv.net/')) {
-            //const nearestIllust = e.target.closest('[type="illust"]');
-            const nearestIllust = e.target.closest('[class = "sc-iasfms-3 gZhyZu"]');
+            // 查找最近的作品容器，处理不同类型的布
+            const nearestIllust = e.target.closest('[class*="sc-9cbefcd0-1"], [class*="sc-9e474da3-0"]');
             if (nearestIllust) {
-                illustId = nearestIllust.getAttribute('data-gtm-value');
-                images = nearestIllust.querySelectorAll('img');
+                // 尝试从链接元素获取作品ID
+                const link = nearestIllust.querySelector('[data-gtm-value]');
+                illustId = link ? link.getAttribute('data-gtm-value') : 'unknown_id';
+                
+                // 获取图片元素
+                const img = nearestIllust.querySelector('img');
+                if (img) {
+                    images = [img];
+                }
                 const spans = nearestIllust.querySelectorAll('span');
                 spans.forEach(span => {
                     const spanValue = parseInt(span.textContent, 10);
