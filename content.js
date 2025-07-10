@@ -1,3 +1,6 @@
+// 【重要】请在这里修改为您自己的反向代理域名
+const MY_PIXIV_PROXY_DOMAIN = 'pixiv.zhongrui.app'; // <--- 修改这里
+
 let twitterListenerAdded = false; // 用于追踪事件监听器是否已添加
 let pixivListenerAdded = false;
 
@@ -25,13 +28,13 @@ chrome.storage.onChanged.addListener(function(changes, area) {
     }
 });
 
-// Twitter功能逻辑
+// Twitter功能逻辑 (保持不变)
 function handleTwitterFunctionality(isActive) {
     if (isActive) {
         if (!twitterListenerAdded) {
             console.log('插件在Twitter上启用');
             document.addEventListener('click', twitterClickListener, true);
-            twitterListenerAdded = true; // 追踪监听器的添加状态
+            twitterListenerAdded = true;
         }
     } else {
         console.log('Twitter 插件关闭，移除功能');
@@ -43,37 +46,19 @@ function handleTwitterFunctionality(isActive) {
 }
 
 function twitterClickListener(e) {
-    console.log('捕获到Twitter点击事件');
-
-    // 处理Twitter点赞事件
     if (e.target.closest('[data-testid="like"]')) {
         console.log('已捕获Twitter点赞');
         const tweetContainer = e.target.closest('[data-testid="cellInnerDiv"]');
         if (tweetContainer) {
-            const usernameSpans = tweetContainer.querySelectorAll('[data-testid="User-Name"] span');
             let authorId = 'unknown_author';
-
-            // 遍历所有span，寻找包含 "@" 的项
+            const usernameSpans = tweetContainer.querySelectorAll('[data-testid="User-Name"] span');
             usernameSpans.forEach(span => {
                 const textContent = span.textContent.trim();
-                if (textContent.includes('@')) {
-                    authorId = textContent;
-                }
+                if (textContent.includes('@')) { authorId = textContent; }
             });
-
             console.log('获取的作者ID:', authorId);
 
-            let tweetId = tweetContainer.getAttribute('data-tweet-id');
-            if (!tweetId) {
-                const tweetLink = tweetContainer.querySelector('a[href*="/status/"]');
-                if (tweetLink) {
-                    const match = tweetLink.href.match(/status\/(\d+)/);
-                    if (match) {
-                        tweetId = match[1];
-                    }
-                }
-            }
-            tweetId = tweetId || 'unknown_tweet_id';
+            let tweetId = tweetContainer.querySelector('a[href*="/status/"]')?.href.match(/status\/(\d+)/)?.[1] || 'unknown_tweet_id';
             console.log('获取的推特ID:', tweetId);
 
             const images = tweetContainer.querySelectorAll('img');
@@ -81,9 +66,7 @@ function twitterClickListener(e) {
                 if (img.src.includes('pbs.twimg.com/media/')) {
                     let imgUrl = new URL(img.src);
                     imgUrl.searchParams.set('name', 'orig');
-
                     console.log('已获取图片链接:', imgUrl.toString());
-
                     chrome.runtime.sendMessage({
                         action: "downloadImage",
                         url: imgUrl.toString(),
@@ -91,15 +74,9 @@ function twitterClickListener(e) {
                         tweetId: tweetId,
                         platform: 'twitter'
                     }, function(response) {
-                        if (chrome.runtime.lastError) {
-                            console.error('发送消息时发生错误:', chrome.runtime.lastError.message);
-                        } else {
-                            if (response.success) {
-                                console.log('图片下载成功，ID:', response.downloadId);
-                            } else {
-                                console.error('图片下载失败，错误:', response.error);
-                            }
-                        }
+                        if (chrome.runtime.lastError) { console.error('发送消息时发生错误:', chrome.runtime.lastError.message); }
+                        else if (response && response.success) { console.log('图片下载成功，ID:', response.downloadId); }
+                        else { console.error('图片下载失败，错误:', response ? response.error : '无响应'); }
                     });
                 }
             });
@@ -125,9 +102,7 @@ function handlePixivFunctionality(isActive) {
 }
 
 function pixivClickListener(e) {
-    console.log('捕获到Pixiv点击事件');
-
-    const bookmarkButton = e.target.closest('[class*=bookmark]') || e.target.closest('[data-ga4-label="bookmark_button"]') || e.target.closest('button.sc-kgq5hw-0.fgVkZi');
+    const bookmarkButton = e.target.closest('[class*=bookmark]') || e.target.closest('[data-ga4-label="bookmark_button"]');
     if (bookmarkButton) {
         console.log('已捕获Pixiv点赞');
         const url = window.location.href;
@@ -135,46 +110,63 @@ function pixivClickListener(e) {
         let images = [];
         let totalImages = 1;
 
+        // 作品详情页逻辑
         if (url.startsWith('https://www.pixiv.net/artworks/')) {
-            const matches = url.match(/artworks\/(\d+)/);
-            illustId = matches ? matches[1] : 'unknown_id';
-            const figure = document.querySelector('figure');
-            if (figure) {
-                images = figure.querySelectorAll('img');
-                const span = figure.querySelector('span[class*="sc-1mr081w-0"]');
-                if (span) {
+            illustId = url.match(/artworks\/(\d+)/)?.[1] || 'unknown_id';
+            const detailsContainer = bookmarkButton.closest('.w-full.flex.flex-col');
+            const imageContainer = detailsContainer ? detailsContainer.previousElementSibling : document.querySelector('figure');
+
+            if (imageContainer) {
+                images = Array.from(imageContainer.querySelectorAll('img'));
+                const span = imageContainer.querySelector('span[class*="sc-1mr081w-0"]');
+                if (span && span.childNodes.length > 2) {
                     const spanValue = parseInt(span.childNodes[2].textContent, 10);
-                    if (!isNaN(spanValue)) {
-                        totalImages = spanValue;
+                    if (!isNaN(spanValue)) { totalImages = spanValue; }
+                }
+            }
+        // 首页/列表页逻辑
+        } else {
+            console.log("在列表页/首页，开始多模式匹配...");
+            let artworkContainer = null;
+            // 模式1: “推荐/精选”布局
+            let nearestIllust = bookmarkButton.closest('[class*="sc-9cbefcd0-1"], [class*="sc-9e474da3-0"]');
+            if (nearestIllust && nearestIllust.querySelector('img')) {
+                artworkContainer = nearestIllust;
+                console.log("模式1成功！找到作品容器:", artworkContainer);
+            } else {
+                // 模式2: “Feed流”布局
+                console.log("模式1失败，尝试模式2...");
+                const detailsBlock = bookmarkButton.closest('.w-full.flex.flex-col');
+                if (detailsBlock) {
+                    const candidate = detailsBlock.previousElementSibling;
+                    if (candidate && candidate.querySelector('img')) {
+                        artworkContainer = candidate;
+                        console.log("模式2成功！找到图片容器:", artworkContainer);
                     }
                 }
             }
-        } else if (url.startsWith('https://www.pixiv.net/')) {
-            // 查找最近的作品容器，处理不同类型的布
-            const nearestIllust = e.target.closest('[class*="sc-9cbefcd0-1"], [class*="sc-9e474da3-0"]');
-            if (nearestIllust) {
-                // 尝试从链接元素获取作品ID
-                const link = nearestIllust.querySelector('[data-gtm-value]');
-                illustId = link ? link.getAttribute('data-gtm-value') : 'unknown_id';
-                
-                // 获取图片元素
-                const img = nearestIllust.querySelector('img');
-                if (img) {
-                    images = [img];
+
+            if (artworkContainer) {
+                illustId = artworkContainer.querySelector('a[data-gtm-value]')?.getAttribute('data-gtm-value');
+                images = [artworkContainer.querySelector('img')].filter(Boolean);
+                const countSpan = artworkContainer.querySelector('span');
+                if (countSpan) {
+                    const spanValue = parseInt(countSpan.textContent, 10);
+                    if (!isNaN(spanValue) && spanValue > 1) { totalImages = spanValue; }
                 }
-                const spans = nearestIllust.querySelectorAll('span');
-                spans.forEach(span => {
-                    const spanValue = parseInt(span.textContent, 10);
-                    if (!isNaN(spanValue)) {
-                        totalImages = spanValue;
-                    }
-                });
+            } else {
+                console.error("【列表页】所有已知布局模式均匹配失败。");
             }
+        }
+
+        if (images.length === 0) {
+            console.log("未能提取到图片信息，操作中止。");
+            return;
         }
 
         console.log('获取的作品ID:', illustId);
         console.log('作品图片总数:', totalImages);
-        console.log('图片URL:',images)
+        console.log('找到的图片元素数组:', images);
 
         const checkAndSendMessage = (url, illustId, index, totalImages, isRetry) => {
             fetch(url, { method: 'HEAD' })
@@ -187,34 +179,28 @@ function pixivClickListener(e) {
                             illustId: illustId,
                             platform: 'pixiv'
                         }, function(response) {
-                            if (chrome.runtime.lastError) {
-                                console.error('发送消息时发生错误:', chrome.runtime.lastError.message);
-                            } else {
-                                if (response.success) {
-                                    console.log('图片下载成功，ID:', response.downloadId);
-                                } else {
-                                    console.error('图片下载失败，错误:', response.error);
-                                }
-                                if (index + 1 < totalImages) {
-                                    const nextUrl = url.replace(`_p${index}`, `_p${index + 1}`);
-                                    checkAndSendMessage(nextUrl, illustId, index + 1, totalImages, false);
-                                }
+                            if (chrome.runtime.lastError) { console.error('发送消息时发生错误:', chrome.runtime.lastError.message); }
+                            else if (response && response.success) { console.log('图片下载成功，ID:', response.downloadId); }
+                            else { console.error('图片下载失败，错误:', response ? response.error : '无响应'); }
+                            if (index + 1 < totalImages) {
+                                const nextUrl = url.replace(`_p${index}`, `_p${index + 1}`);
+                                checkAndSendMessage(nextUrl, illustId, index + 1, totalImages, false);
                             }
                         });
-                    } else {
-                        throw new Error('图片请求失败');
-                    }
+                    } else { throw new Error('图片请求失败'); }
                 })
                 .catch(error => {
-                    console.error('请求错误:', error.message);
+                    console.error('请求错误:', error.message, url);
                     if (!isRetry) {
                         let retryUrl = url.replace('.png', '.jpg');
+                        if (retryUrl === url) { retryUrl = url.replace('.jpg', '.png'); }
                         console.log('重试下载图片链接:', retryUrl);
                         setTimeout(() => checkAndSendMessage(retryUrl, illustId, index, totalImages, true), 500);
                     } else {
-                        console.error('重试下载也失败:', error.message);
+                        console.error('重试下载也失败:', url);
                         if (index + 1 < totalImages) {
-                            const nextUrl = url.replace(`_p${index}`, `_p${index + 1}`);
+                            let nextBaseUrl = url.replace('.jpg', '.png');
+                            const nextUrl = nextBaseUrl.replace(`_p${index}`, `_p${index + 1}`);
                             checkAndSendMessage(nextUrl, illustId, index + 1, totalImages, false);
                         }
                     }
@@ -222,18 +208,20 @@ function pixivClickListener(e) {
         };
 
         images.forEach((img) => {
+            if (!img || !img.src) return;
             console.log('检测到的图片URL:', img.src);
-            let imgUrl = new URL(img.src);
-
-            const matches = imgUrl.pathname.match(/img\/(\d{4})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d+)_/);
+            const matches = img.src.match(/img\/(\d{4})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d+)_/);
             if (matches) {
-                const [_, year, month, day, hour, minute, second, illustId] = matches;
-                const originalImgUrl = `https://pixiv.zhongrui.app/img-original/img/${year}/${month}/${day}/${hour}/${minute}/${second}/${illustId}_p0.png`;
+                const [/*full match*/, year, month, day, hour, minute, second, matchedIllustId] = matches;
+                const finalIllustId = illustId && illustId !== 'unknown_id' ? illustId : matchedIllustId;
+                
+                // 【核心修改】使用在文件顶部定义的常量来拼接URL
+                const originalImgUrl = `https://${MY_PIXIV_PROXY_DOMAIN}/img-original/img/${year}/${month}/${day}/${hour}/${minute}/${second}/${finalIllustId}_p0.png`;
+                
                 console.log('转换后的图片链接:', originalImgUrl);
-
-                checkAndSendMessage(originalImgUrl, illustId, 0, totalImages, false);
+                checkAndSendMessage(originalImgUrl, finalIllustId, 0, totalImages, false);
             } else {
-                console.log('未找到匹配的时间戳和作品ID');
+                console.log('无法从图片URL中解析出ID和时间戳:', img.src);
             }
         });
     }
