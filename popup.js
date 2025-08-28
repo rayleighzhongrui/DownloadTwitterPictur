@@ -16,6 +16,12 @@ function updateExample(containerId, exampleId) {
             case 'tweetTime':
                 exampleText += '20230810_';
                 break;
+            case 'authorName':
+                exampleText += '萩森じあ_';
+                break;
+            case 'authorId':
+                exampleText += '12345_';
+                break;
             case 'illustId':
                 exampleText += '88669977_';
                 break;
@@ -108,7 +114,7 @@ function initSelection(containerId, storedFormats) {
 // 从存储中加载用户的选择并初始化界面
 chrome.storage.sync.get(['twitterFilenameFormat', 'pixivFilenameFormat', 'twitterSwitchActive', 'pixivSwitchActive'], function(result) {
     const twitterFormats = result.twitterFilenameFormat || ['account', 'tweetId'];
-    const pixivFormats = result.pixivFilenameFormat || ['illustId'];
+    const pixivFormats = result.pixivFilenameFormat || ['authorName', 'illustId'];
     
     // 默认将开关设置为打开（true）
     const twitterSwitch = (typeof result.twitterSwitchActive === 'undefined') ? true : result.twitterSwitchActive;

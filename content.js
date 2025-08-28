@@ -317,6 +317,8 @@ function pixivClickListener(e) {
         console.log('已捕获Pixiv点赞，按钮类:', bookmarkButton.className);
         const url = window.location.href;
         let illustId;
+        let authorId = 'unknown_author';
+        let authorName = 'unknown_author_name';
         let images = [];
         let totalImages = 1;
 
@@ -324,6 +326,23 @@ function pixivClickListener(e) {
         if (url.startsWith('https://www.pixiv.net/artworks/')) {
             illustId = url.match(/artworks\/(\d+)/)?.[1] || 'unknown_id';
             console.log('作品详情页，作品ID:', illustId);
+            
+            // 在作品详情页提取作者ID和作者名称
+            const authorLinkElement = document.querySelector('a[href*="/users/"]');
+            if (authorLinkElement) {
+                authorId = authorLinkElement.href.match(/users\/(\d+)/)?.[1] || 'unknown_author';
+                
+                // 获取作者名称 - 优先从链接文本内容获取
+                authorName = authorLinkElement.textContent.trim();
+                if (!authorName || authorName.includes('查看') || authorName.includes('更多') || authorName.length > 50) {
+                    // 备选：从图片alt属性获取
+                    const authorImg = authorLinkElement.querySelector('img');
+                    if (authorImg && authorImg.alt && !authorImg.alt.includes('的插画')) {
+                        authorName = authorImg.alt.trim();
+                    }
+                }
+                console.log('作品详情页提取的作者ID:', authorId, '作者名称:', authorName);
+            }
             
             // 在作品详情页查找图片
             const mainImage = document.querySelector('main img');
@@ -366,6 +385,23 @@ function pixivClickListener(e) {
                     // 备选：从data属性获取
                     illustId = artworkContainer.querySelector('[data-gtm-value]')?.getAttribute('data-gtm-value');
                     console.log('从data属性提取ID:', illustId);
+                }
+                
+                // 在首页/列表页提取作者ID和作者名称
+                const authorLink = artworkContainer.querySelector('a[href*="/users/"]');
+                if (authorLink) {
+                    authorId = authorLink.href.match(/users\/(\d+)/)?.[1] || 'unknown_author';
+                    
+                    // 获取作者名称 - 优先从链接文本内容获取
+                    authorName = authorLink.textContent.trim();
+                    if (!authorName || authorName.includes('查看') || authorName.includes('更多') || authorName.length > 50) {
+                        // 备选：从图片alt属性获取
+                        const authorImg = authorLink.querySelector('img');
+                        if (authorImg && authorImg.alt && !authorImg.alt.includes('的插画')) {
+                            authorName = authorImg.alt.trim();
+                        }
+                    }
+                    console.log('首页/列表页提取的作者ID:', authorId, '作者名称:', authorName);
                 }
                 
                 // 获取图片 - 选择最大的图片（避免头像）
@@ -428,6 +464,8 @@ function pixivClickListener(e) {
                             action: "downloadImage",
                             url: url,
                             illustId: illustId,
+                            authorId: authorId,
+                            authorName: authorName,
                             platform: 'pixiv'
                         }, function(response) {
                             if (chrome.runtime.lastError) { console.error('发送消息时发生错误:', chrome.runtime.lastError.message); }

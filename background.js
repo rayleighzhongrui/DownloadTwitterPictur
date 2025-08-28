@@ -14,7 +14,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
             if (request.platform === 'twitter') {
                 formats = result.twitterFilenameFormat || ['account', 'tweetId'];
             } else if (request.platform === 'pixiv') {
-                formats = result.pixivFilenameFormat || ['illustId'];
+                formats = result.pixivFilenameFormat || ['authorName', 'illustId'];
             }
 
             // 根据用户选择的格式拼接文件名
@@ -28,6 +28,12 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
                         break;
                     case 'tweetTime':
                         filename += `${request.tweetTime}_`;
+                        break;
+                    case 'authorName':
+                        filename += `${request.authorName}_`;
+                        break;
+                    case 'authorId':
+                        filename += `${request.authorId}_`;
                         break;
                     case 'illustId':
                         filename += `${request.illustId}_`;
@@ -73,7 +79,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
             if (request.platform === 'twitter') {
                 formats = result.twitterFilenameFormat || ['account', 'tweetId'];
             } else if (request.platform === 'pixiv') {
-                formats = result.pixivFilenameFormat || ['illustId'];
+                formats = result.pixivFilenameFormat || ['authorName', 'illustId'];
             }
 
             // 根据用户选择的格式拼接文件名
@@ -87,6 +93,12 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
                         break;
                     case 'tweetTime':
                         filename += `${request.tweetTime}_`;
+                        break;
+                    case 'authorName':
+                        filename += `${request.authorName}_`;
+                        break;
+                    case 'authorId':
+                        filename += `${request.authorId}_`;
                         break;
                     case 'illustId':
                         filename += `${request.illustId}_`;
