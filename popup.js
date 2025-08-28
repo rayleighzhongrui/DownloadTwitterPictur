@@ -27,18 +27,28 @@ function updateExample(containerId, exampleId) {
         }
     });
 
-    exampleText = exampleText.slice(0, -1) + '.jpg'; // 去掉最后一个下划线并加上扩展名
+    // 根据示例类型选择不同的扩展名
+    if (exampleId === 'twitterVideoExample') {
+        exampleText = exampleText.slice(0, -1) + '_1920x1080.mp4'; // 视频示例
+    } else {
+        exampleText = exampleText.slice(0, -1) + '.jpg'; // 图片示例
+    }
+    
     document.getElementById(exampleId).textContent = exampleText;
 }
 
 // 处理按钮点击选择并更新示例
-function toggleSelection(containerId, exampleId) {
+function toggleSelection(containerId, exampleId, videoExampleId = null) {
     const container = document.getElementById(containerId);
     container.addEventListener('click', function(event) {
         const target = event.target;
         if (target.classList.contains('format-option')) {
             target.classList.toggle('selected');
             updateExample(containerId, exampleId);
+            // 如果提供了视频示例ID，也更新视频示例
+            if (videoExampleId) {
+                updateExample(containerId, videoExampleId);
+            }
         }
     });
 }
@@ -85,8 +95,14 @@ function initSelection(containerId, storedFormats) {
             option.classList.add('selected');
         }
     });
-    const exampleId = containerId === 'twitterFormat' ? 'twitterExample' : 'pixivExample';
-    updateExample(containerId, exampleId);
+    
+    if (containerId === 'twitterFormat') {
+        updateExample(containerId, 'twitterExample');
+        updateExample(containerId, 'twitterVideoExample');
+    } else {
+        const exampleId = containerId === 'pixivFormat' ? 'pixivExample' : 'twitterExample';
+        updateExample(containerId, exampleId);
+    }
 }
 
 // 从存储中加载用户的选择并初始化界面
@@ -106,5 +122,5 @@ chrome.storage.sync.get(['twitterFilenameFormat', 'pixivFilenameFormat', 'twitte
 });
 
 // 绑定事件处理
-toggleSelection('twitterFormat', 'twitterExample');
+toggleSelection('twitterFormat', 'twitterExample', 'twitterVideoExample');
 toggleSelection('pixivFormat', 'pixivExample');
