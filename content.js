@@ -112,33 +112,34 @@ function twitterClickListener(e) {
                         const videoId = posterMatch[1];
                         console.log('提取的视频ID:', videoId);
                         
-                        // 尝试不同分辨率的视频URL，从最高分辨率开始
-                        const resolutions = ['1920x1080', '1280x720', '640x360'];
+                        // 获取视频的原始分辨率
+                        const actualWidth = video.videoWidth;
+                        const actualHeight = video.videoHeight;
+                        const originalResolution = `${actualWidth}x${actualHeight}`;
                         
-                        resolutions.forEach((resolution, index) => {
-                            // 构造视频URL
-                            const videoUrl = `https://video.twimg.com/amplify_video/${videoId}/vid/avc1/${resolution}/${videoId}.mp4`;
-                            console.log(`尝试下载视频 (${resolution}):`, videoUrl);
-                            
-                            chrome.runtime.sendMessage({
-                                action: "downloadVideo",
-                                url: videoUrl,
-                                videoId: videoId,
-                                resolution: resolution,
-                                priority: index, // 0=最高优先级
-                                authorId: authorId,
-                                tweetId: tweetId,
-                                tweetTime: tweetTime,
-                                platform: 'twitter'
-                            }, function(response) {
-                                if (chrome.runtime.lastError) { 
-                                    console.error('发送视频下载消息时发生错误:', chrome.runtime.lastError.message); 
-                                } else if (response && response.success) { 
-                                    console.log(`视频下载成功 (${resolution})，ID:`, response.downloadId); 
-                                } else { 
-                                    console.error(`视频下载失败 (${resolution})，错误:`, response ? response.error : '无响应'); 
-                                }
-                            });
+                        console.log('视频原始分辨率:', originalResolution);
+                        
+                        // 构造原始分辨率的视频URL
+                        const videoUrl = `https://video.twimg.com/amplify_video/${videoId}/vid/avc1/${originalResolution}/${videoId}.mp4`;
+                        console.log('下载原始分辨率视频:', videoUrl);
+                        
+                        chrome.runtime.sendMessage({
+                            action: "downloadVideo",
+                            url: videoUrl,
+                            videoId: videoId,
+                            resolution: originalResolution,
+                            authorId: authorId,
+                            tweetId: tweetId,
+                            tweetTime: tweetTime,
+                            platform: 'twitter'
+                        }, function(response) {
+                            if (chrome.runtime.lastError) { 
+                                console.error('发送视频下载消息时发生错误:', chrome.runtime.lastError.message); 
+                            } else if (response && response.success) { 
+                                console.log(`视频下载成功 (${originalResolution})，ID:`, response.downloadId); 
+                            } else { 
+                                console.error(`视频下载失败 (${originalResolution})，错误:`, response ? response.error : '无响应'); 
+                            }
                         });
                     } else {
                         console.log('无法从poster URL中提取视频ID:', video.poster);
