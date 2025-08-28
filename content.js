@@ -61,6 +61,22 @@ function twitterClickListener(e) {
             let tweetId = tweetContainer.querySelector('a[href*="/status/"]')?.href.match(/status\/(\d+)/)?.[1] || 'unknown_tweet_id';
             console.log('获取的推特ID:', tweetId);
 
+            // 获取推文发布时间
+            let tweetTime = 'unknown_time';
+            const timeElement = tweetContainer.querySelector('time');
+            if (timeElement) {
+                const datetime = timeElement.getAttribute('datetime');
+                if (datetime) {
+                    // 解析ISO 8601格式时间并转换为YYYYMMDD格式
+                    const date = new Date(datetime);
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    tweetTime = `${year}${month}${day}`;
+                }
+            }
+            console.log('获取的推文时间:', tweetTime);
+
             const images = tweetContainer.querySelectorAll('img');
             images.forEach((img) => {
                 if (img.src.includes('pbs.twimg.com/media/')) {
@@ -72,6 +88,7 @@ function twitterClickListener(e) {
                         url: imgUrl.toString(),
                         authorId: authorId,
                         tweetId: tweetId,
+                        tweetTime: tweetTime,
                         platform: 'twitter'
                     }, function(response) {
                         if (chrome.runtime.lastError) { console.error('发送消息时发生错误:', chrome.runtime.lastError.message); }

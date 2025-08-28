@@ -13,6 +13,9 @@ function updateExample(containerId, exampleId) {
             case 'tweetId':
                 exampleText += '88669977_';
                 break;
+            case 'tweetTime':
+                exampleText += '20230810_';
+                break;
             case 'illustId':
                 exampleText += '88669977_';
                 break;

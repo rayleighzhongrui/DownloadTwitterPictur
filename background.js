@@ -26,6 +26,9 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
                     case 'tweetId':
                         filename += `${request.tweetId}_`;
                         break;
+                    case 'tweetTime':
+                        filename += `${request.tweetTime}_`;
+                        break;
                     case 'illustId':
                         filename += `${request.illustId}_`;
                         break;
