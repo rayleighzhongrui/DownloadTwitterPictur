@@ -4,43 +4,141 @@
     <meta charset="UTF-8">
     <title>文件名格式设置</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background-color: #1c1c1c;
-            color: #fb6102;
-            text-align: left;
-            padding: 20px;
-            width: 350px;
-            background: url('images/image.png') no-repeat center center fixed;
+            font-family: 'Inter', 'Noto Sans CJK SC', sans-serif;
+            width: 400px;
+            height: 520px;
+            overflow: hidden;
+            background: #f0f0f0;
+        }
+
+        /* 主容器 - 左右分栏 */
+        .main-container {
+            display: flex;
+            height: 100%;
+            position: relative;
+        }
+
+        /* 左侧助手区域 */
+        .assistant-panel {
+            width: 130px;
+            height: 100%;
+            background: url('images/image.png') no-repeat center center;
             background-size: cover;
+            position: relative;
+            overflow: hidden;
         }
-        h2 {
-            font-size: 20px;
-            margin-bottom: 10px;
+
+        /* 助手区域遮罩层 */
+        .assistant-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, 
+                rgba(34, 197, 94, 0.15) 0%, 
+                rgba(16, 185, 129, 0.1) 50%, 
+                rgba(255, 255, 255, 0.05) 100%);
+            backdrop-filter: blur(1px);
         }
+
+
+        /* 右侧设置区域 */
+        .settings-panel {
+            width: 270px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            position: relative;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            border-left: 4px solid;
+            border-image: linear-gradient(135deg, #10b981, #059669, #047857) 1;
+        }
+
+        /* 自定义滚动条 */
+        .settings-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .settings-panel::-webkit-scrollbar-track {
+            background: rgba(107, 114, 128, 0.1);
+        }
+
+        .settings-panel::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            border-radius: 3px;
+        }
+
+        .settings-panel::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #4b5563, #374151);
+        }
+
+        /* 设置内容容器 */
+        .settings-content {
+            padding: 16px 18px;
+        }
+
+        /* 标题样式 */
+        .title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: #047857;
+            margin-bottom: 14px;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        /* 开关区域 */
+        .switches-section {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
         .switch-container {
+            flex: 1;
             display: flex;
             align-items: center;
-            margin-bottom: 10px;
-            font-size: 16px;
-            background-color: #f2f2f2;
-            padding: 5px;
-            border-radius: 5px;
-            width: auto;
-            max-width: 100px; /* 容器最大宽度进一步缩小 */
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: rgba(34, 197, 94, 0.12);
+            border-radius: 10px;
+            border: 1px solid rgba(34, 197, 94, 0.25);
+            font-weight: 500;
+            font-size: 12px;
+            color: #047857;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
         }
+
+        .switch-container:hover {
+            background: rgba(34, 197, 94, 0.2);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+        }
+
+        /* 现代化开关样式 */
         .switch {
             position: relative;
-            display: inline-block;
-            width: 40px; /* 缩小开关宽度 */
-            height: 24px; /* 保持开关的高度 */
-            margin-left: auto;
+            width: 38px;
+            height: 20px;
         }
+
         .switch input {
             opacity: 0;
             width: 0;
             height: 0;
         }
+
         .slider {
             position: absolute;
             cursor: pointer;
@@ -48,69 +146,147 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px; /* 调整为与开关高度一致的圆角 */
+            background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+            border-radius: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+
         .slider:before {
             position: absolute;
             content: "";
-            height: 18px; /* 保持滑块高度 */
-            width: 18px; /* 保持滑块宽度 */
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background: linear-gradient(135deg, #ffffff, #f3f4f6);
             border-radius: 50%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
+
         input:checked + .slider {
-            background-color: #fb6102;
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
         }
+
         input:checked + .slider:before {
-            transform: translateX(16px); /* 调整滑块的移动距离 */
+            transform: translateX(18px);
         }
-        .format-container {
-            margin-bottom: 20px;
+
+        /* 格式配置区域 */
+        .format-section {
+            margin-bottom: 12px;
         }
-        .format-selection {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-            max-width: 100%;
-        }
-        .format-option {
-            background-color: #333;
-            border-radius: 5px;
-            padding: 5px 10px;
-            cursor: pointer;
-            border: 1px solid #444;
-        }
-        .format-option.selected {
-            background-color: #f8f8f8;
-        }
-        #saveButton {
-            background-color: #fdfcfb;
-            color: rgb(251, 89, 2);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 20px;
-        }
-        #saveButton:hover {
-            background-color: #b5f88b;
-        }
-        .example-container {
-            margin-top: 20px;
-            text-align: left;
+
+        .format-title {
             font-size: 14px;
-            background-color: #fafcf9;
-            padding: 10px;
-            border-radius: 5px;
+            font-weight: 600;
+            color: #065f46;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
         }
-        .success-message {            
+
+        .format-title::before {
+            content: "✨";
+            margin-right: 6px;
+            font-size: 12px;
+        }
+
+        .format-selection {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .format-option {
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid rgba(34, 197, 94, 0.25);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 500;
+            color: #065f46;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
+        }
+
+        .format-option:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(34, 197, 94, 0.2);
+            border-color: rgba(34, 197, 94, 0.4);
+        }
+
+        .format-option.selected {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-color: #047857;
+            color: white;
+            box-shadow: 0 3px 12px rgba(16, 185, 129, 0.3);
+            text-shadow: none;
+        }
+
+        /* 示例区域 */
+        .example-container {
+            background: rgba(249, 250, 251, 0.8);
+            border-radius: 10px;
+            padding: 10px;
+            margin: 12px 0;
+            border: 1px solid rgba(34, 197, 94, 0.15);
+            backdrop-filter: blur(4px);
+        }
+
+        .example-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #047857;
+            margin-bottom: 4px;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+        }
+
+        .example-filename {
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 9px;
+            color: #374151;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 4px 6px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            border-left: 2px solid #10b981;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
+        }
+
+        /* 保存按钮 */
+        #saveButton {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+        }
+
+        #saveButton:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+            background: linear-gradient(135deg, #059669, #047857);
+        }
+
+        #saveButton:active {
+            transform: translateY(0);
+        }
+
+        /* 成功消息 */
+        .success-message {
             position: fixed;
             top: 0;
             left: 0;
@@ -119,69 +295,137 @@
             display: none;
             justify-content: center;
             align-items: center;
-            background: url('images/success.png') no-repeat center center fixed;
+            background: url('images/success.png') no-repeat center center;
             background-size: cover;
             z-index: 1000;
-            color: rgb(249, 113, 2);
-            font-size: 24px;
+            backdrop-filter: blur(5px);
+        }
+
+        .success-text {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px 30px;
+            border-radius: 16px;
+            color: #059669;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 2px solid rgba(16, 185, 129, 0.3);
+        }
+
+        /* 装饰性元素 */
+        .decorative-dots {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 3px;
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981, #059669);
+            opacity: 0.4;
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
         }
     </style>
 </head>
 <body>
+    <div class="main-container">
+        <!-- 左侧助手区域 -->
+        <div class="assistant-panel">
+            <div class="assistant-overlay"></div>
+            <div class="decorative-dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+        </div>
 
-    <!-- Twitter开关 -->
-    <div class="switch-container">
-        <span>Twitter</span>
-        <label class="switch">
-            <input type="checkbox" id="twitterSwitch">
-            <span class="slider"></span>
-        </label>
-    </div>
+        <!-- 右侧设置区域 -->
+        <div class="settings-panel">
+            <div class="settings-content">
+                <div class="title">📁 文件名格式设置</div>
 
-    <!-- Pixiv开关 -->
-    <div class="switch-container">
-        <span>Pixiv</span>
-        <label class="switch">
-            <input type="checkbox" id="pixivSwitch">
-            <span class="slider"></span>
-        </label>
-    </div>
+                <!-- 平台开关 -->
+                <div class="switches-section">
+                    <div class="switch-container">
+                        <span>🐦 Twitter</span>
+                        <label class="switch">
+                            <input type="checkbox" id="twitterSwitch">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
 
-    <h2>推特文件名格式（TwitterFileFormat）</h2>
-    <div class="format-container">
-        <div class="format-selection" id="twitterFormat">
-            <div class="format-option" data-value="account">推特账号(account)</div>
-            <div class="format-option" data-value="tweetId">推特ID(twitterID)</div>
-            <div class="format-option" data-value="tweetTime">推文时间(TweetTime)</div>
-            <div class="format-option" data-value="downloadDate">下载时间(DownloadDate)</div>
+                    <div class="switch-container">
+                        <span>🎨 Pixiv</span>
+                        <label class="switch">
+                            <input type="checkbox" id="pixivSwitch">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Twitter格式配置 -->
+                <div class="format-section">
+                    <div class="format-title">推特文件名格式</div>
+                    <div class="format-selection" id="twitterFormat">
+                        <div class="format-option" data-value="account">推特账号</div>
+                        <div class="format-option" data-value="tweetId">推特ID</div>
+                        <div class="format-option" data-value="tweetTime">推文时间</div>
+                        <div class="format-option" data-value="downloadDate">下载时间</div>
+                    </div>
+                </div>
+
+                <!-- Pixiv格式配置 -->
+                <div class="format-section">
+                    <div class="format-title">Pixiv文件名格式</div>
+                    <div class="format-selection" id="pixivFormat">
+                        <div class="format-option" data-value="authorName">作者名称</div>
+                        <div class="format-option" data-value="authorId">作者ID</div>
+                        <div class="format-option" data-value="illustId">作品ID</div>
+                        <div class="format-option" data-value="downloadDate">下载时间</div>
+                    </div>
+                </div>
+
+                <!-- 文件名示例 -->
+                <div class="example-container">
+                    <div class="example-title">🖼️ 推特图片示例</div>
+                    <div id="twitterExample" class="example-filename">推特账号_推特ID_20230811.jpg</div>
+                    
+                    <div class="example-title">🎬 推特视频示例</div>
+                    <div id="twitterVideoExample" class="example-filename">推特账号_推特ID_1920x1080.mp4</div>
+                    
+                    <div class="example-title">🎭 Pixiv文件名示例</div>
+                    <div id="pixivExample" class="example-filename">作品ID_20230811.jpg</div>
+                </div>
+
+                <button id="saveButton">💾 保存设置</button>
+            </div>
         </div>
     </div>
-
-    <h2>Pixiv文件名格式</h2>
-    <div class="format-container">
-        <div class="format-selection" id="pixivFormat">
-            <div class="format-option" data-value="authorName">作者名称(authorName)</div>
-            <div class="format-option" data-value="authorId">作者ID(authorID)</div>
-            <div class="format-option" data-value="illustId">作品ID(illustID)</div>
-            <div class="format-option" data-value="downloadDate">下载时间(DownloadDate)</div>
-        </div>
-    </div>
-
-    <div class="example-container">
-        <strong>推特图片示例(TwitterImageExample):</strong>
-        <div id="twitterExample">推特账号_推特ID_20230811.jpg</div>
-        <br>
-        <strong>推特视频示例(TwitterVideoExample):</strong>
-        <div id="twitterVideoExample">推特账号_推特ID_1920x1080.mp4</div>
-        <br>
-        <strong>Pixiv文件名示例(pixivExample):</strong>
-        <div id="pixivExample">作品ID_20230811.jpg</div>
-    </div>
-
-    <button id="saveButton">保存(save)</button>
 
     <div id="successMessage" class="success-message">
-        保存成功(Save Success)！
+        <div class="success-text">
+            ✅ 保存成功！<br>
+            <small>设置已更新</small>
+        </div>
     </div>
 
     <!-- 引入外部JS文件 -->
