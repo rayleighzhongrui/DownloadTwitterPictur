@@ -220,19 +220,42 @@ function findArtworkContainer(bookmarkButton) {
 
 // 判断是否为推荐流
 function isRecommendationFeed(bookmarkButton) {
-    // 推荐流特征：点击收藏后会弹出推荐内容
-    // 通常推荐流的容器更大，包含更复杂的结构
+    // 策略1：检查是否在包含data-ga4-label="work_content"的推荐流结构中
+    const workContentContainer = bookmarkButton.closest('[data-ga4-label="work_content"]');
+    if (workContentContainer) {
+        console.log('通过work_content标识检测到推荐流');
+        return true;
+    }
+    
+    // 策略2：检查是否存在"其他作品"推荐区域
     const container = bookmarkButton.closest('div');
     if (!container) return false;
     
-    // 检查是否有推荐相关的元素出现（作者推荐等）
-    const hasRecommendationElements = container.querySelector('[class*="recommend"], [class*="suggest"], [class*="author"]');
+    const hasRecommendationText = container.textContent.includes('其他作品') || 
+                                  container.textContent.includes('的其他作品') ||
+                                  container.querySelector('[class*="recommend"], [class*="suggest"]');
     
-    // 或者通过图片大小判断（推荐流通常有更大的图片）
+    // 策略3：检查容器中是否有多个收藏按钮（推荐流特征）
+    const bookmarkButtonsCount = container.querySelectorAll('button[data-ga4-label="bookmark_button"]').length;
+    const hasMultipleBookmarks = bookmarkButtonsCount > 3; // 超过3个收藏按钮通常是推荐流
+    
+    // 策略4：检查图片大小（推荐流主图通常较大）
     const mainImg = container.querySelector('img');
     const isLargeImage = mainImg && (mainImg.offsetWidth > 300 || mainImg.offsetHeight > 300);
     
-    return hasRecommendationElements || isLargeImage;
+    const isRecommendation = hasRecommendationText || hasMultipleBookmarks || isLargeImage;
+    
+    if (isRecommendation) {
+        console.log('推荐流检测结果:', {
+            hasRecommendationText,
+            bookmarkButtonsCount,
+            hasMultipleBookmarks,
+            isLargeImage,
+            imageSize: mainImg ? `${mainImg.offsetWidth}x${mainImg.offsetHeight}` : 'none'
+        });
+    }
+    
+    return isRecommendation;
 }
 
 // 关注流的容器查找（原逻辑）
@@ -266,47 +289,81 @@ function findFollowingArtworkContainer(bookmarkButton) {
     return null;
 }
 
-// 推荐流的容器查找（特殊逻辑）
+// 推荐流的容器查找（精确关联逻辑）
 function findRecommendationArtworkContainer(bookmarkButton) {
-    console.log('检测到推荐流，使用特殊查找逻辑');
+    console.log('检测到推荐流，使用精确关联查找逻辑');
     
-    // 推荐流策略：向上查找大容器，然后寻找主要的图片区域
+    // 策略1：优先查找按钮的直接关联容器
+    // 从收藏按钮向上查找，找到包含图片和链接的最小容器
     let current = bookmarkButton;
     let attempts = 0;
     
-    while (current && current !== document.body && attempts < 10) {
+    while (current && current !== document.body && attempts < 8) {
         current = current.parentElement;
         attempts++;
         
         if (!current) break;
         
-        // 查找当前容器中的所有图片
+        // 检查当前容器是否直接包含图片和作品链接（不包含其他作品）
         const images = Array.from(current.querySelectorAll('img'));
         const artworkLinks = Array.from(current.querySelectorAll('a[href*="/artworks/"]'));
+        const bookmarkButtons = Array.from(current.querySelectorAll('button[data-ga4-label="bookmark_button"]'));
         
-        if (images.length > 0 && artworkLinks.length > 0) {
-            // 过滤掉小图（可能是推荐的作者头像或小图）
-            const largeImages = images.filter(img => {
-                const rect = img.getBoundingClientRect();
-                return rect.width > 100 && rect.height > 100; // 只要较大的图片
-            });
-            
-            if (largeImages.length > 0) {
-                // 找到主要的作品链接（通常是第一个或最大的）
-                const mainArtworkLink = artworkLinks.find(link => {
-                    const linkRect = link.getBoundingClientRect();
-                    return linkRect.width > 200; // 主要作品链接通常较大
-                }) || artworkLinks[0];
-                
-                if (mainArtworkLink) {
-                    console.log('找到推荐流主要作品容器');
-                    return current;
-                }
+        // 关键：确保这是一个独立的作品容器（只有一个收藏按钮）
+        if (images.length > 0 && artworkLinks.length > 0 && bookmarkButtons.length === 1) {
+            // 验证这个收藏按钮就是被点击的按钮
+            if (bookmarkButtons[0] === bookmarkButton || bookmarkButtons[0].contains(bookmarkButton)) {
+                console.log('找到精确关联的作品容器，容器标签:', current.tagName, '类名:', current.className.substring(0, 50));
+                return current;
             }
         }
     }
     
-    console.log('推荐流容器查找失败，回退到关注流逻辑');
+    // 策略2：基于data-ga4-entity-id属性查找
+    current = bookmarkButton;
+    attempts = 0;
+    
+    while (current && current !== document.body && attempts < 8) {
+        current = current.parentElement;
+        attempts++;
+        
+        if (!current) break;
+        
+        // 查找具有作品ID数据属性的容器
+        const entityId = current.getAttribute('data-ga4-entity-id');
+        if (entityId && entityId.startsWith('illust/')) {
+            const images = Array.from(current.querySelectorAll('img'));
+            const artworkLinks = Array.from(current.querySelectorAll('a[href*="/artworks/"]'));
+            
+            if (images.length > 0 && artworkLinks.length > 0) {
+                console.log('通过data-ga4-entity-id找到作品容器:', entityId);
+                return current;
+            }
+        }
+    }
+    
+    // 策略3：保守的向上查找，但限制范围
+    console.log('精确关联查找失败，使用保守策略');
+    current = bookmarkButton;
+    attempts = 0;
+    
+    while (current && current !== document.body && attempts < 5) { // 限制查找层数
+        current = current.parentElement;
+        attempts++;
+        
+        if (!current) break;
+        
+        const images = Array.from(current.querySelectorAll('img'));
+        const artworkLinks = Array.from(current.querySelectorAll('a[href*="/artworks/"]'));
+        
+        // 确保不会选择包含太多作品的大容器
+        if (images.length > 0 && artworkLinks.length > 0 && artworkLinks.length <= 2) {
+            console.log('保守策略找到容器，作品链接数:', artworkLinks.length);
+            return current;
+        }
+    }
+    
+    console.log('推荐流所有策略均失败，回退到关注流逻辑');
     return findFollowingArtworkContainer(bookmarkButton);
 }
 
