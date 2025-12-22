@@ -99,48 +99,28 @@ function twitterClickListener(e) {
                 }
             });
 
-            // 下载视频
+            // 下载视频 - 尝试多种方法获取视频URL
             const videoComponents = tweetContainer.querySelectorAll('[data-testid="videoComponent"]');
             videoComponents.forEach((videoComponent) => {
                 const video = videoComponent.querySelector('video');
                 if (video && video.poster) {
                     console.log('检测到视频，poster URL:', video.poster);
-                    
+
                     // 从poster URL中提取视频ID
                     const posterMatch = video.poster.match(/amplify_video_thumb\/(\d+)\//);
                     if (posterMatch) {
                         const videoId = posterMatch[1];
                         console.log('提取的视频ID:', videoId);
-                        
+
                         // 获取视频的原始分辨率
                         const actualWidth = video.videoWidth;
                         const actualHeight = video.videoHeight;
                         const originalResolution = `${actualWidth}x${actualHeight}`;
-                        
+
                         console.log('视频原始分辨率:', originalResolution);
-                        
-                        // 构造原始分辨率的视频URL
-                        const videoUrl = `https://video.twimg.com/amplify_video/${videoId}/vid/avc1/${originalResolution}/${videoId}.mp4`;
-                        console.log('下载原始分辨率视频:', videoUrl);
-                        
-                        chrome.runtime.sendMessage({
-                            action: "downloadVideo",
-                            url: videoUrl,
-                            videoId: videoId,
-                            resolution: originalResolution,
-                            authorId: authorId,
-                            tweetId: tweetId,
-                            tweetTime: tweetTime,
-                            platform: 'twitter'
-                        }, function(response) {
-                            if (chrome.runtime.lastError) { 
-                                console.error('发送视频下载消息时发生错误:', chrome.runtime.lastError.message); 
-                            } else if (response && response.success) { 
-                                console.log(`视频下载成功 (${originalResolution})，ID:`, response.downloadId); 
-                            } else { 
-                                console.error(`视频下载失败 (${originalResolution})，错误:`, response ? response.error : '无响应'); 
-                            }
-                        });
+
+                        // 尝试获取并下载视频URL
+                        attemptVideoDownload(videoId, originalResolution, authorId, tweetId, tweetTime);
                     } else {
                         console.log('无法从poster URL中提取视频ID:', video.poster);
                     }
@@ -148,6 +128,122 @@ function twitterClickListener(e) {
                     console.log('未找到有效的视频元素');
                 }
             });
+
+            // 尝试多种方法获取视频URL并下载
+            async function attemptVideoDownload(videoId, resolution, authorId, tweetId, tweetTime) {
+                // 方法1: 尝试从Performance API获取
+                const resources = performance.getEntriesByType('resource');
+                for (const resource of resources) {
+                    if (resource.name.includes('video.twimg.com') &&
+                        resource.name.includes('amplify_video') &&
+                        resource.name.includes(videoId) &&
+                        resource.name.includes('.mp4') &&
+                        !resource.name.includes('.m4s')) {
+                        console.log('从Performance API找到视频URL:', resource.name);
+                        downloadVideo(resource.name, videoId, resolution, authorId, tweetId, tweetTime);
+                        return;
+                    }
+                }
+
+                // 方法2: 尝试解析m3u8播放列表
+                try {
+                    console.log('尝试解析m3u8播放列表...');
+                    const m3u8Url = `https://video.twimg.com/amplify_video/${videoId}/pl/y4pR76KfjoHenX_S.m3u8?variant_version=1&tag=16&v=cfc`;
+
+                    const response = await fetch(m3u8Url);
+                    if (response.ok) {
+                        const m3u8Content = await response.text();
+                        console.log('获取到m3u8播放列表');
+
+                        // 解析m3u8查找子播放列表
+                        const lines = m3u8Content.split('\n');
+                        for (let i = 0; i < lines.length; i++) {
+                            const line = lines[i].trim();
+
+                            // 查找视频流（包含RESOLUTION和avc1）
+                            if (line.includes('RESOLUTION')) {
+                                const resolutionMatch = line.match(/RESOLUTION=(\d+x\d+)/);
+                                const nextLine = lines[i + 1]?.trim();
+
+                                if (resolutionMatch && nextLine && nextLine.includes('avc1')) {
+                                    const streamResolution = resolutionMatch[1];
+                                    const subM3u8Url = nextLine.startsWith('http') ? nextLine : `https://video.twimg.com${nextLine}`;
+
+                                    console.log(`找到视频流 (${streamResolution}):`, subM3u8Url);
+
+                                    // 获取子播放列表
+                                    const subResponse = await fetch(subM3u8Url);
+                                    if (subResponse.ok) {
+                                        const subM3u8 = await subResponse.text();
+                                        const subLines = subM3u8.split('\n');
+
+                                        // 查找EXT-X-MAP中的mp4 URL（完整的初始化视频）
+                                        for (const subLine of subLines) {
+                                            if (subLine.includes('#EXT-X-MAP')) {
+                                                const uriMatch = subLine.match(/URI="([^"]+)"/);
+                                                if (uriMatch) {
+                                                    const mp4Url = uriMatch[1].startsWith('http')
+                                                        ? uriMatch[1]
+                                                        : `https://video.twimg.com${uriMatch[1]}`;
+                                                    console.log('从EXT-X-MAP找到完整mp4 URL:', mp4Url);
+                                                    downloadVideo(mp4Url, videoId, streamResolution, authorId, tweetId, tweetTime);
+                                                    return;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.log('m3u8解析失败:', error.message);
+                }
+
+                // 方法3: 尝试通用的URL模式
+                console.log('尝试通用URL模式...');
+                const commonPatterns = [
+                    `https://video.twimg.com/amplify_video/${videoId}/vid/avc1/0/0/${resolution}/${videoId}.mp4`,
+                    `https://video.twimg.com/amplify_video/${videoId}/pl/${videoId}.m3u8`,
+                ];
+
+                for (const url of commonPatterns) {
+                    try {
+                        const response = await fetch(url, { method: 'HEAD' });
+                        if (response.ok) {
+                            console.log('找到可用的URL:', url);
+                            downloadVideo(url, videoId, resolution, authorId, tweetId, tweetTime);
+                            return;
+                        }
+                    } catch (e) {
+                        // 继续尝试下一个
+                    }
+                }
+
+                console.error('所有方法均失败，无法获取视频URL');
+            }
+
+            // 下载视频
+            function downloadVideo(url, videoId, resolution, authorId, tweetId, tweetTime) {
+                chrome.runtime.sendMessage({
+                    action: "downloadVideo",
+                    url: url,
+                    videoId: videoId,
+                    resolution: resolution,
+                    authorId: authorId,
+                    tweetId: tweetId,
+                    tweetTime: tweetTime,
+                    platform: 'twitter'
+                }, function(response) {
+                    if (chrome.runtime.lastError) {
+                        console.error('发送视频下载消息时发生错误:', chrome.runtime.lastError.message);
+                    } else if (response && response.success) {
+                        console.log(`视频下载成功 (${resolution})，ID:`, response.downloadId);
+                    } else {
+                        console.error(`视频下载失败 (${resolution})，错误:`, response ? response.error : '无响应');
+                    }
+                });
+            }
         }
     }
 }
