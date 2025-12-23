@@ -99,7 +99,7 @@ function twitterClickListener(e) {
                 }
             });
 
-            // 下载视频 - 尝试多种方法获取视频URL
+            // 下载视频 - 监听网络请求获取视频URL
             const videoComponents = tweetContainer.querySelectorAll('[data-testid="videoComponent"]');
             videoComponents.forEach((videoComponent) => {
                 const video = videoComponent.querySelector('video');
@@ -131,7 +131,20 @@ function twitterClickListener(e) {
 
             // 尝试多种方法获取视频URL并下载
             async function attemptVideoDownload(videoId, resolution, authorId, tweetId, tweetTime) {
-                // 方法1: 尝试从Performance API获取
+                // 方法1: 调用Twitter GraphQL API获取推文数据（包含视频URL）
+                console.log('尝试通过Twitter API获取视频URL...');
+                try {
+                    const videoUrl = await fetchVideoUrlFromTwitterAPI(tweetId);
+                    if (videoUrl) {
+                        console.log('从Twitter API找到视频URL:', videoUrl);
+                        downloadVideo(videoUrl, videoId, resolution, authorId, tweetId, tweetTime);
+                        return;
+                    }
+                } catch (error) {
+                    console.log('Twitter API方法失败:', error.message);
+                }
+
+                // 方法2: 尝试从Performance API获取
                 const resources = performance.getEntriesByType('resource');
                 for (const resource of resources) {
                     if (resource.name.includes('video.twimg.com') &&
@@ -145,79 +158,305 @@ function twitterClickListener(e) {
                     }
                 }
 
-                // 方法2: 尝试解析m3u8播放列表
+                // 方法3: 尝试触发视频加载并监听请求
+                console.log('尝试触发视频加载并监听请求...');
+                setupNetworkListener(videoId, resolution, authorId, tweetId, tweetTime);
+            }
+
+            // 通过Twitter GraphQL API获取视频URL
+            async function fetchVideoUrlFromTwitterAPI(tweetId) {
                 try {
-                    console.log('尝试解析m3u8播放列表...');
-                    const m3u8Url = `https://video.twimg.com/amplify_video/${videoId}/pl/y4pR76KfjoHenX_S.m3u8?variant_version=1&tag=16&v=cfc`;
+                    // 从cookie中获取csrf token
+                    const csrfToken = getCsrfToken();
+                    if (!csrfToken) {
+                        throw new Error('无法获取CSRF token');
+                    }
 
-                    const response = await fetch(m3u8Url);
-                    if (response.ok) {
-                        const m3u8Content = await response.text();
-                        console.log('获取到m3u8播放列表');
+                    // Twitter GraphQL API 配置（参考Media Harvest的实现）
+                    const QUERY_ID = '_8aYOgEDz35BrBcBal1-_w';
+                    const QUERY_NAME = 'TweetDetail';
 
-                        // 解析m3u8查找子播放列表
-                        const lines = m3u8Content.split('\n');
-                        for (let i = 0; i < lines.length; i++) {
-                            const line = lines[i].trim();
+                    const variables = {
+                        focalTweetId: tweetId,
+                        rankingMode: 'Relevance',
+                        includePromotedContent: false,
+                        withCommunity: false,
+                        withQuickPromoteEligibilityTweetFields: false,
+                        withBirdwatchNotes: false,
+                        withVoice: false,
+                    };
 
-                            // 查找视频流（包含RESOLUTION和avc1）
-                            if (line.includes('RESOLUTION')) {
-                                const resolutionMatch = line.match(/RESOLUTION=(\d+x\d+)/);
-                                const nextLine = lines[i + 1]?.trim();
+                    const features = {
+                        rweb_video_screen_enabled: false,
+                        profile_label_improvements_pcf_label_in_post_enabled: true,
+                        rweb_tipjar_consumption_enabled: true,
+                        verified_phone_label_enabled: false,
+                        creator_subscriptions_tweet_preview_api_enabled: true,
+                        responsive_web_graphql_timeline_navigation_enabled: true,
+                        responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
+                        premium_content_api_read_enabled: false,
+                        communities_web_enable_tweet_community_results_fetch: true,
+                        c9s_tweet_anatomy_moderator_badge_enabled: true,
+                        responsive_web_grok_analyze_button_fetch_trends_enabled: false,
+                        responsive_web_grok_analyze_post_followups_enabled: true,
+                        responsive_web_jetfuel_frame: false,
+                        responsive_web_grok_share_attachment_enabled: true,
+                        articles_preview_enabled: true,
+                        responsive_web_edit_tweet_api_enabled: true,
+                        graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
+                        view_counts_everywhere_api_enabled: true,
+                        longform_notetweets_consumption_enabled: true,
+                        responsive_web_twitter_article_tweet_consumption_enabled: true,
+                        tweet_awards_web_tipping_enabled: false,
+                        responsive_web_grok_show_grok_translated_post: false,
+                        responsive_web_grok_analysis_button_from_backend: false,
+                        creator_subscriptions_quote_tweet_preview_enabled: false,
+                        freedom_of_speech_not_reach_fetch_enabled: true,
+                        standardized_nudges_misinfo: true,
+                        tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: true,
+                        longform_notetweets_rich_text_read_enabled: true,
+                        longform_notetweets_inline_media_enabled: true,
+                        responsive_web_grok_image_annotation_enabled: true,
+                        responsive_web_enhance_cards_enabled: false,
+                    };
 
-                                if (resolutionMatch && nextLine && nextLine.includes('avc1')) {
-                                    const streamResolution = resolutionMatch[1];
-                                    const subM3u8Url = nextLine.startsWith('http') ? nextLine : `https://video.twimg.com${nextLine}`;
+                    const fieldToggles = {
+                        withArticleRichContentState: true,
+                        withArticlePlainText: false,
+                        withGrokAnalyze: false,
+                        withDisallowedReplyControls: false,
+                    };
 
-                                    console.log(`找到视频流 (${streamResolution}):`, subM3u8Url);
+                    // 构建URL
+                    const url = new URL(`https://x.com/i/api/graphql/${QUERY_ID}/${QUERY_NAME}`);
+                    url.searchParams.append('variables', JSON.stringify(variables));
+                    url.searchParams.append('features', JSON.stringify(features));
+                    url.searchParams.append('fieldToggles', JSON.stringify(fieldToggles));
 
-                                    // 获取子播放列表
-                                    const subResponse = await fetch(subM3u8Url);
-                                    if (subResponse.ok) {
-                                        const subM3u8 = await subResponse.text();
-                                        const subLines = subM3u8.split('\n');
+                    const response = await fetch(url.href, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA',
+                            'x-twitter-active-user': 'yes',
+                            'x-csrf-token': csrfToken,
+                            'User-Agent': navigator.userAgent,
+                        }
+                    });
 
-                                        // 查找EXT-X-MAP中的mp4 URL（完整的初始化视频）
-                                        for (const subLine of subLines) {
-                                            if (subLine.includes('#EXT-X-MAP')) {
-                                                const uriMatch = subLine.match(/URI="([^"]+)"/);
-                                                if (uriMatch) {
-                                                    const mp4Url = uriMatch[1].startsWith('http')
-                                                        ? uriMatch[1]
-                                                        : `https://video.twimg.com${uriMatch[1]}`;
-                                                    console.log('从EXT-X-MAP找到完整mp4 URL:', mp4Url);
-                                                    downloadVideo(mp4Url, videoId, streamResolution, authorId, tweetId, tweetTime);
-                                                    return;
-                                                }
-                                            }
-                                        }
-                                    }
+                    if (!response.ok) {
+                        throw new Error(`API request failed: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    console.log('Twitter API响应数据:', data);
+
+                    // 解析响应数据，查找视频URL
+                    const videoUrl = findVideoUrlInResponse(data, tweetId);
+                    return videoUrl;
+
+                } catch (error) {
+                    console.error('调用Twitter API失败:', error);
+                    return null;
+                }
+            }
+
+            // 从cookie中获取csrf token
+            function getCsrfToken() {
+                const cookies = document.cookie.split(';');
+                for (const cookie of cookies) {
+                    const [name, value] = cookie.trim().split('=');
+                    if (name === 'ct0') {
+                        return decodeURIComponent(value);
+                    }
+                }
+                return null;
+            }
+
+            // 从Twitter API响应中查找最高质量的视频URL
+            function findVideoUrlInResponse(data, tweetId) {
+                try {
+                    // 遵循Media Harvest的解析路径
+                    // data.threaded_conversation_with_injections_v2.instructions
+                    const instructions = data?.data?.threaded_conversation_with_injections_v2?.instructions;
+                    if (!instructions || !Array.isArray(instructions)) {
+                        console.log('未找到instructions');
+                        return null;
+                    }
+
+                    // 找到TimelineAddEntries类型的instruction
+                    const addEntriesInstruction = instructions.find(i => i.type === 'TimelineAddEntries');
+                    if (!addEntriesInstruction || !Array.isArray(addEntriesInstruction.entries)) {
+                        console.log('未找到TimelineAddEntries或entries');
+                        return null;
+                    }
+
+                    // 找到包含目标tweetId的entry
+                    const targetEntry = addEntriesInstruction.entries.find(e => e.entryId && e.entryId.includes(tweetId));
+                    if (!targetEntry) {
+                        console.log('未找到包含tweetId的entry:', tweetId);
+                        return null;
+                    }
+
+                    // 获取tweet_results
+                    const tweetResults = targetEntry.content?.itemContent?.tweet_results;
+                    if (!tweetResults) {
+                        console.log('未找到tweet_results');
+                        return null;
+                    }
+
+                    // 获取legacy数据中的extended_entities.media
+                    const legacy = tweetResults.result?.tweet?.legacy || tweetResults.result?.legacy;
+                    const media = legacy?.extended_entities?.media;
+                    if (!media || !Array.isArray(media)) {
+                        console.log('未找到media');
+                        return null;
+                    }
+
+                    // 遍历media找到视频
+                    for (const mediaItem of media) {
+                        if (mediaItem.type === 'video' || mediaItem.type === 'animated_gif') {
+                            const videoInfo = mediaItem.video_info;
+                            if (videoInfo && videoInfo.variants) {
+                                // 查找所有mp4变体，选择最高码率的
+                                const mp4Variants = videoInfo.variants.filter(v => v.content_type === 'video/mp4');
+                                if (mp4Variants.length > 0) {
+                                    // 按bitrate排序，选择最高的
+                                    mp4Variants.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
+                                    const bestVariant = mp4Variants[0];
+
+                                    console.log('选择的视频变体:', {
+                                        url: bestVariant.url,
+                                        bitrate: bestVariant.bitrate,
+                                        content_type: bestVariant.content_type
+                                    });
+
+                                    return bestVariant.url;
                                 }
                             }
                         }
                     }
+
+                    console.log('未找到视频变体');
+                    return null;
+
                 } catch (error) {
-                    console.log('m3u8解析失败:', error.message);
+                    console.error('解析视频URL失败:', error);
+                    return null;
                 }
+            }
 
-                // 方法3: 尝试通用的URL模式
-                console.log('尝试通用URL模式...');
-                const commonPatterns = [
-                    `https://video.twimg.com/amplify_video/${videoId}/vid/avc1/0/0/${resolution}/${videoId}.mp4`,
-                    `https://video.twimg.com/amplify_video/${videoId}/pl/${videoId}.m3u8`,
-                ];
+            // 设置网络监听器来捕获视频URL
+            function setupNetworkListener(videoId, resolution, authorId, tweetId, tweetTime) {
+                let captured = false;
+                const timeout = 5000;
 
-                for (const url of commonPatterns) {
-                    try {
-                        const response = await fetch(url, { method: 'HEAD' });
-                        if (response.ok) {
-                            console.log('找到可用的URL:', url);
-                            downloadVideo(url, videoId, resolution, authorId, tweetId, tweetTime);
-                            return;
+                // 重写fetch来拦截视频请求
+                const originalFetch = window.fetch;
+                window.fetch = function(...args) {
+                    const url = args[0];
+
+                    if (typeof url === 'string' && url.includes('video.twimg.com') && url.includes(videoId)) {
+                        console.log('拦截到视频相关请求:', url);
+
+                        // 检查是否是m3u8播放列表
+                        if (url.includes('.m3u8') && !captured) {
+                            // 异步处理m3u8解析
+                            fetch(url)
+                                .then(response => response.text())
+                                .then(content => {
+                                    if (captured) return;
+
+                                    // 查找子播放列表
+                                    const lines = content.split('\n');
+                                    for (let i = 0; i < lines.length; i++) {
+                                        const line = lines[i].trim();
+
+                                        if (line.includes('RESOLUTION')) {
+                                            const resMatch = line.match(/RESOLUTION=(\d+x\d+)/);
+                                            const nextLine = lines[i + 1]?.trim();
+
+                                            if (resMatch && nextLine && nextLine.includes('avc1')) {
+                                                const subUrl = nextLine.startsWith('http')
+                                                    ? nextLine
+                                                    : `https://video.twimg.com${nextLine}`;
+
+                                                // 获取子播放列表并查找mp4
+                                                fetch(subUrl)
+                                                    .then(r => r.text())
+                                                    .then(subContent => {
+                                                        if (captured) return;
+
+                                                        const subLines = subContent.split('\n');
+                                                        for (const subLine of subLines) {
+                                                            if (subLine.includes('#EXT-X-MAP')) {
+                                                                const uriMatch = subLine.match(/URI="([^"]+)"/);
+                                                                if (uriMatch) {
+                                                                    captured = true;
+                                                                    window.fetch = originalFetch;
+
+                                                                    const mp4Url = uriMatch[1].startsWith('http')
+                                                                        ? uriMatch[1]
+                                                                        : `https://video.twimg.com${uriMatch[1]}`;
+                                                                    console.log('找到完整mp4 URL:', mp4Url);
+                                                                    downloadVideo(mp4Url, videoId, resMatch[1], authorId, tweetId, tweetTime);
+                                                                    return;
+                                                                }
+                                                            }
+                                                        }
+                                                    })
+                                                    .catch(() => {});
+                                                break;
+                                            }
+                                        }
+                                    }
+                                })
+                                .catch(() => {});
                         }
-                    } catch (e) {
-                        // 继续尝试下一个
+
+                        // 检查是否是完整的mp4文件
+                        if (url.includes('.mp4') && url.includes('/vid/') && !url.includes('.m4s') && !captured) {
+                            captured = true;
+                            window.fetch = originalFetch;
+                            console.log('找到完整mp4 URL:', url);
+                            downloadVideo(url, videoId, resolution, authorId, tweetId, tweetTime);
+                        }
                     }
+
+                    return originalFetch.apply(this, args);
+                };
+
+                // 设置超时恢复
+                setTimeout(() => {
+                    if (!captured) {
+                        window.fetch = originalFetch;
+                        console.log('监听超时，尝试直接访问推文页面');
+
+                        // 方法3: 尝试访问推文页面获取视频信息
+                        tryFetchTweetPage(videoId, resolution, authorId, tweetId, tweetTime);
+                    }
+                }, timeout);
+            }
+
+            // 尝试从推文页面获取视频信息
+            async function tryFetchTweetPage(videoId, resolution, authorId, tweetId, tweetTime) {
+                // 尝试访问TweetDetail的GraphQL API
+                try {
+                    // 从当前页面的数据中查找
+                    const scripts = document.querySelectorAll('script');
+                    for (const script of scripts) {
+                        const text = script.textContent;
+                        if (text && text.includes('video_url') && text.includes(videoId)) {
+                            // 尝试提取视频URL
+                            const matches = text.match(/https:\/\/video\.twimg\.com\/amplify_video\/${videoId}\/[^"]+\.mp4/g);
+                            if (matches && matches.length > 0) {
+                                console.log('从页面数据找到视频URL:', matches[0]);
+                                downloadVideo(matches[0], videoId, resolution, authorId, tweetId, tweetTime);
+                                return;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.log('从页面获取视频信息失败:', error.message);
                 }
 
                 console.error('所有方法均失败，无法获取视频URL');
