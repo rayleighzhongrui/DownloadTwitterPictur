@@ -13,8 +13,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Core Components
 - **manifest.json**: Extension manifest with V3规范 (permissions, content scripts, declarative net rules)
 - **background.js**: Service worker handling download functionality via chrome.downloads API
-- **content.js**: Content script injecting into Twitter/Pixiv pages to detect like/bookmark clicks
-- **popup.html/popup.js**: UI for configuring filename formats and platform switches
+- **src/content.js**: Content script dispatcher for Twitter/Pixiv platforms
+- **src/platforms/**: Twitter/Pixiv platform logic split into detector/api/platform modules
+- **src/core/**: Config, filename generator, proxy manager, downloader base
+- **src/utils/**: Storage helpers, retry, notifications, error logger
+- **popup.html/popup.js**: UI for configuring filename formats, proxy settings, logs
 - **rules.json**: Declarative Net Request rules for Pixiv image access
 
 ### Key Features
@@ -22,11 +25,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2. **Pixiv Integration**: Detects bookmark clicks on artwork detail pages and galleries
 3. **Custom Filename**: Supports various format combinations (account, tweetId, illustId, timestamp)
 4. **Platform Control**: Individual toggle switches for Twitter/Pixiv functionality
+5. **Proxy Management**: UI-based Pixiv proxy configuration and switching
+6. **Notifications & Logs**: Download notifications, retry warnings, and error log viewer
 
 ### File Dependencies
 - **Twitter**: Uses data-testid selectors for detecting like buttons and tweet containers
 - **Pixiv**: Uses class name patterns for detecting bookmark buttons across different layout modes
-- **Proxy**: Configures custom proxy domain `pixiv.zhongrui.app` (needs user customization)
+- **Proxy**: Configured via popup UI (no code changes required)
 
 ## Development Commands
 
@@ -41,18 +46,17 @@ Click extension icon → Configure settings
 ```
 
 ### Configuration Required
-**IMPORTANT**: Before testing, update line 2 in `content.js`:
-```javascript
-const MY_PIXIV_PROXY_DOMAIN = 'pixiv.zhongrui.app'; // Replace with your proxy
-```
+Configure Pixiv proxy from the popup "代理" tab before testing downloads.
 
 ### Manual Validation
 1. **Twitter Test**: Like a tweet with images → check Downloads folder
 2. **Pixiv Test**: Bookmark artwork → check Downloads folder
 3. **Settings Test**: Test popup functionality for filename format changes
+4. **Proxy Test**: Add proxy in popup and use "测试" button
+5. **Logs Test**: Trigger a failure and verify "日志" tab lists errors
 
 ### Platform Notes
 - **Manifest V3**: Uses service worker background.js (not persistent background page)
-- **Permissions**: Requires downloads, storage, activeTab, declarativeNetRequest
+- **Permissions**: Requires downloads, storage, activeTab, declarativeNetRequest, notifications
 - **Hosts**: Supports twitter.com, x.com, pixiv.net, i.pximg.net
 - **Browser**: Chrome manifest v3, may need adaptation for Firefox/Edge

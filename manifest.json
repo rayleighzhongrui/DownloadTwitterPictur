@@ -6,14 +6,22 @@
   "icons": {
     "48": "images/icon.png"
   },
-  "permissions": ["downloads", "declarativeNetRequest", "activeTab", "storage"],
+  "permissions": ["downloads", "declarativeNetRequest", "activeTab", "storage", "notifications"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
       "matches": ["*://*.twitter.com/*", "*://*.x.com/*", "*://*.pixiv.net/*"],
-      "js": ["content.js"]
+      "js": ["content.js"],
+      "run_at": "document_end"
+    },
+    {
+      "world": "MAIN",
+      "matches": ["*://*.twitter.com/*", "*://*.x.com/*"],
+      "js": ["inject.js"],
+      "run_at": "document_start"
     }
   ],
   "action": {
@@ -22,9 +30,22 @@
     "default_title": "Twitter&Pixiv Image Downloader"
   },
   "host_permissions": [
+    "https://*/*",
     "*://*.pixiv.net/*",
     "*://i.pximg.net/*",
     "*://pixiv.zhongrui.app/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/core/*.js",
+        "src/platforms/*.js",
+        "src/platforms/twitter/*.js",
+        "src/platforms/pixiv/*.js",
+        "src/utils/*.js"
+      ],
+      "matches": ["*://*.twitter.com/*", "*://*.x.com/*", "*://*.pixiv.net/*"]
+    }
   ],
   "declarative_net_request": {
     "rule_resources": [

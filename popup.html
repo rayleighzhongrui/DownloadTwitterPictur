@@ -87,6 +87,45 @@
             padding: 16px 18px;
         }
 
+        /* 顶部标签页 */
+        .tabs {
+            display: flex;
+            gap: 6px;
+            padding: 10px 12px 0;
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 10;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 8px 6px;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #065f46;
+            background: rgba(16, 185, 129, 0.12);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #ffffff;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 0 18px 18px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         /* 标题样式 */
         .title {
             text-align: center;
@@ -344,6 +383,233 @@
             0%, 100% { opacity: 0.4; transform: scale(1); }
             50% { opacity: 0.8; transform: scale(1.1); }
         }
+
+        /* 代理设置 */
+        .proxy-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .proxy-header h3 {
+            font-size: 14px;
+            color: #065f46;
+        }
+
+        .btn-primary {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .proxy-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .proxy-item {
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .proxy-main.active {
+            border-left: 3px solid #10b981;
+            padding-left: 6px;
+        }
+
+        .proxy-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #065f46;
+        }
+
+        .proxy-domain {
+            font-size: 11px;
+            color: #374151;
+            margin-top: 4px;
+        }
+
+        .proxy-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .btn-outline {
+            border: 1px solid rgba(16, 185, 129, 0.5);
+            background: transparent;
+            color: #065f46;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .proxy-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            background: rgba(16, 185, 129, 0.2);
+            color: #065f46;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-on {
+            background: #10b981;
+        }
+
+        .status-off {
+            background: #9ca3af;
+        }
+
+        .proxy-options {
+            margin-top: 12px;
+            display: grid;
+            gap: 8px;
+            font-size: 12px;
+            color: #065f46;
+        }
+
+        .checkbox {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        /* 对话框 */
+        .dialog {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .dialog.open {
+            display: flex;
+        }
+
+        .dialog-content {
+            width: 90%;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .dialog-content h3 {
+            font-size: 14px;
+            color: #065f46;
+            margin-bottom: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            color: #374151;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .dialog-actions button {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        #cancelProxyBtn {
+            background: #e5e7eb;
+        }
+
+        /* 日志 */
+        .log-filters {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .log-filters select,
+        .log-filters button {
+            font-size: 11px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            background: #ffffff;
+            cursor: pointer;
+        }
+
+        .log-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .log-item {
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            font-size: 11px;
+            color: #7f1d1d;
+        }
+
+        .log-title {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .log-url {
+            color: #991b1b;
+            word-break: break-all;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 12px;
+            font-size: 12px;
+            color: #6b7280;
+        }
     </style>
 </head>
 <body>
@@ -360,63 +626,96 @@
 
         <!-- 右侧设置区域 -->
         <div class="settings-panel">
-            <div class="settings-content">
-                <div class="title">📁 文件名格式设置</div>
+            <div class="tabs">
+                <button class="tab active" data-tab="settings">设置</button>
+                <button class="tab" data-tab="logs">日志</button>
+            </div>
 
-                <!-- 平台开关 -->
-                <div class="switches-section">
-                    <div class="switch-container">
-                        <span>🐦 Twitter</span>
-                        <label class="switch">
-                            <input type="checkbox" id="twitterSwitch">
-                            <span class="slider"></span>
-                        </label>
+            <div class="tab-content active" id="settings-tab">
+                <div class="settings-content">
+                    <div class="title">📁 文件名格式设置</div>
+
+                    <!-- 平台开关 -->
+                    <div class="switches-section">
+                        <div class="switch-container">
+                            <span>🐦 Twitter</span>
+                            <label class="switch">
+                                <input type="checkbox" id="twitterSwitch">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="switch-container">
+                            <span>🎨 Pixiv</span>
+                            <label class="switch">
+                                <input type="checkbox" id="pixivSwitch">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
                     </div>
 
-                    <div class="switch-container">
-                        <span>🎨 Pixiv</span>
-                        <label class="switch">
-                            <input type="checkbox" id="pixivSwitch">
-                            <span class="slider"></span>
-                        </label>
+                    <div class="switches-section">
+                        <div class="switch-container">
+                            <span>🔔 通知</span>
+                            <label class="switch">
+                                <input type="checkbox" id="notificationSwitch">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Twitter格式配置 -->
-                <div class="format-section">
-                    <div class="format-title">推特文件名格式</div>
-                    <div class="format-selection" id="twitterFormat">
-                        <div class="format-option" data-value="account">推特账号</div>
-                        <div class="format-option" data-value="tweetId">推特ID</div>
-                        <div class="format-option" data-value="tweetTime">推文时间</div>
-                        <div class="format-option" data-value="downloadDate">下载时间</div>
+                    <!-- Twitter格式配置 -->
+                    <div class="format-section">
+                        <div class="format-title">推特文件名格式</div>
+                        <div class="format-selection" id="twitterFormat">
+                            <div class="format-option" data-value="account">推特账号</div>
+                            <div class="format-option" data-value="tweetId">推特ID</div>
+                            <div class="format-option" data-value="tweetTime">推文时间</div>
+                            <div class="format-option" data-value="downloadDate">下载时间</div>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Pixiv格式配置 -->
-                <div class="format-section">
-                    <div class="format-title">Pixiv文件名格式</div>
-                    <div class="format-selection" id="pixivFormat">
-                        <div class="format-option" data-value="authorName">作者名称</div>
-                        <div class="format-option" data-value="authorId">作者ID</div>
-                        <div class="format-option" data-value="illustId">作品ID</div>
-                        <div class="format-option" data-value="downloadDate">下载时间</div>
+                    <!-- Pixiv格式配置 -->
+                    <div class="format-section">
+                        <div class="format-title">Pixiv文件名格式</div>
+                        <div class="format-selection" id="pixivFormat">
+                            <div class="format-option" data-value="authorName">作者名称</div>
+                            <div class="format-option" data-value="authorId">作者ID</div>
+                            <div class="format-option" data-value="illustId">作品ID</div>
+                            <div class="format-option" data-value="downloadDate">下载时间</div>
+                        </div>
                     </div>
-                </div>
 
-                <!-- 文件名示例 -->
-                <div class="example-container">
-                    <div class="example-title">🖼️ 推特图片示例</div>
-                    <div id="twitterExample" class="example-filename">推特账号_推特ID_20230811.jpg</div>
-                    
-                    <div class="example-title">🎬 推特视频示例</div>
-                    <div id="twitterVideoExample" class="example-filename">推特账号_推特ID_1920x1080.mp4</div>
-                    
-                    <div class="example-title">🎭 Pixiv文件名示例</div>
-                    <div id="pixivExample" class="example-filename">作品ID_20230811.jpg</div>
-                </div>
+                    <!-- 文件名示例 -->
+                    <div class="example-container">
+                        <div class="example-title">🖼️ 推特图片示例</div>
+                        <div id="twitterExample" class="example-filename">推特账号_推特ID_20230811.jpg</div>
+                        
+                        <div class="example-title">🎬 推特视频示例</div>
+                        <div id="twitterVideoExample" class="example-filename">推特账号_推特ID_1920x1080.mp4</div>
+                        
+                        <div class="example-title">🎭 Pixiv文件名示例</div>
+                        <div id="pixivExample" class="example-filename">作品ID_20230811.jpg</div>
+                    </div>
 
-                <button id="saveButton">💾 保存设置</button>
+                    <button id="saveButton">💾 保存设置</button>
+                </div>
+            </div>
+
+            <div class="tab-content" id="logs-tab">
+                <div class="settings-content">
+                    <div class="format-title">错误日志</div>
+                    <div class="log-filters">
+                        <select id="logPlatform">
+                            <option value="all">所有平台</option>
+                            <option value="twitter">Twitter</option>
+                            <option value="pixiv">Pixiv</option>
+                        </select>
+                        <button id="clearLogs">清空日志</button>
+                        <button id="exportLogs">导出日志</button>
+                    </div>
+                    <div class="log-list" id="logList"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -429,6 +728,6 @@
     </div>
 
     <!-- 引入外部JS文件 -->
-    <script src="popup.js"></script>
+    <script type="module" src="popup.js"></script>
 </body>
 </html>

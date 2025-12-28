@@ -1,0 +1,13 @@
+{
+  "name": "download-twitter-pixiv-image",
+  "version": "2.0.0",
+  "description": "Chrome extension for downloading Twitter and Pixiv images",
+  "scripts": {
+    "build": "node build.config.js",
+    "dev": "node build.config.js --watch",
+    "release": "node scripts/release.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.0"
+  }
+}
