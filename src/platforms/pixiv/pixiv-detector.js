@@ -1,3 +1,5 @@
+import { pixivCache } from '../../utils/pixiv-dom-cache.js';
+
 export function findPixivBookmarkButton(target) {
   let button = target.closest('[class*="bookmark"]');
   if (button) return button;
@@ -27,10 +29,23 @@ function isLikelyBookmarkButton(button) {
 }
 
 export function findArtworkContainer(bookmarkButton) {
-  if (isRecommendationFeed(bookmarkButton)) {
-    return findRecommendationArtworkContainer(bookmarkButton);
+  const cached = pixivCache.getContainer(bookmarkButton);
+  if (cached) {
+    return cached;
   }
-  return findFollowingArtworkContainer(bookmarkButton);
+
+  let container;
+  if (isRecommendationFeed(bookmarkButton)) {
+    container = findRecommendationArtworkContainer(bookmarkButton);
+  } else {
+    container = findFollowingArtworkContainer(bookmarkButton);
+  }
+
+  if (container) {
+    pixivCache.setContainer(bookmarkButton, container);
+  }
+
+  return container;
 }
 
 function isRecommendationFeed(bookmarkButton) {
@@ -83,6 +98,10 @@ function findFollowingArtworkContainer(bookmarkButton) {
 }
 
 function findRecommendationArtworkContainer(bookmarkButton) {
+  const allImages = Array.from(document.getElementsByTagName('img'));
+  const allLinks = Array.from(document.querySelectorAll('a[href*="/artworks/"]'));
+  const allButtons = Array.from(document.querySelectorAll('button[data-ga4-label="bookmark_button"]'));
+
   let current = bookmarkButton;
   let attempts = 0;
 
@@ -92,47 +111,49 @@ function findRecommendationArtworkContainer(bookmarkButton) {
 
     if (!current) break;
 
-    const images = Array.from(current.querySelectorAll('img'));
-    const artworkLinks = Array.from(current.querySelectorAll('a[href*="/artworks/"]'));
-    const bookmarkButtons = Array.from(current.querySelectorAll('button[data-ga4-label="bookmark_button"]'));
+    const imageCount = countContained(allImages, current, 1);
+    const linkCount = countContained(allLinks, current, 3);
+    const buttonInfo = countButtons(allButtons, current, bookmarkButton, 2);
 
-    if (images.length > 0 && artworkLinks.length > 0 && bookmarkButtons.length === 1) {
-      if (bookmarkButtons[0] === bookmarkButton || bookmarkButtons[0].contains(bookmarkButton)) {
-        return current;
-      }
+    if (imageCount > 0 && linkCount > 0 && buttonInfo.count === 1 && buttonInfo.matches) {
+      return current;
     }
-  }
 
-  current = bookmarkButton;
-  attempts = 0;
-  while (current && current !== document.body && attempts < 8) {
-    current = current.parentElement;
-    attempts += 1;
-
-    if (!current) break;
     const entityId = current.getAttribute('data-ga4-entity-id');
     if (entityId && entityId.startsWith('illust/')) {
-      const images = Array.from(current.querySelectorAll('img'));
-      const artworkLinks = Array.from(current.querySelectorAll('a[href*="/artworks/"]'));
-      if (images.length > 0 && artworkLinks.length > 0) {
+      if (imageCount > 0 && linkCount > 0) {
         return current;
       }
     }
-  }
 
-  current = bookmarkButton;
-  attempts = 0;
-  while (current && current !== document.body && attempts < 5) {
-    current = current.parentElement;
-    attempts += 1;
-    if (!current) break;
-
-    const images = Array.from(current.querySelectorAll('img'));
-    const artworkLinks = Array.from(current.querySelectorAll('a[href*="/artworks/"]'));
-    if (images.length > 0 && artworkLinks.length > 0 && artworkLinks.length <= 2) {
+    if (imageCount > 0 && linkCount > 0 && linkCount <= 2) {
       return current;
     }
   }
 
   return findFollowingArtworkContainer(bookmarkButton);
+}
+
+function countContained(nodes, container, maxCount) {
+  let count = 0;
+  for (const node of nodes) {
+    if (!container.contains(node)) continue;
+    count += 1;
+    if (maxCount && count >= maxCount) break;
+  }
+  return count;
+}
+
+function countButtons(nodes, container, targetButton, maxCount) {
+  let count = 0;
+  let matches = false;
+  for (const node of nodes) {
+    if (!container.contains(node)) continue;
+    count += 1;
+    if (node === targetButton || node.contains(targetButton)) {
+      matches = true;
+    }
+    if (maxCount && count >= maxCount) break;
+  }
+  return { count, matches };
 }

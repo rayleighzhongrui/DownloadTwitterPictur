@@ -101,7 +101,7 @@ export class TwitterPlatform extends BasePlatform {
     }, {
       name: 'Twitter图片下载',
       onRetry: ({ attempt }) => {
-        if (attempt === 2) {
+        if (attempt === 1) {
           chrome.runtime.sendMessage({
             action: 'notify',
             level: 'warning',

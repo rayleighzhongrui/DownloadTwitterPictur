@@ -8,7 +8,7 @@ export class RetryManager {
   async retry(fn, { name = '任务', onRetry } = {}) {
     let lastError;
 
-    for (let attempt = 1; attempt <= this.maxRetries; attempt += 1) {
+    for (let attempt = 0; attempt < this.maxRetries; attempt += 1) {
       try {
         return await fn(attempt);
       } catch (error) {
@@ -18,7 +18,7 @@ export class RetryManager {
           throw error;
         }
 
-        const delay = this.baseDelay * Math.pow(2, attempt - 1);
+        const delay = this.baseDelay * Math.pow(2, attempt);
         if (typeof onRetry === 'function') {
           onRetry({ attempt, delay, error, name });
         }
@@ -30,18 +30,24 @@ export class RetryManager {
   }
 
   defaultRetryable(error) {
-    const retryableErrors = [
-      'Network timeout',
-      'Connection reset',
-      '5xx',
-      'ETIMEDOUT',
-      'ECONNRESET',
-      'Failed to fetch'
-    ];
     const message = error?.message || '';
     const status = error?.status || error?.response?.status;
 
-    return retryableErrors.some(msg => message.includes(msg)) || (status && status >= 500);
+    if (status && status >= 400 && status < 500) {
+      return false;
+    }
+
+    const networkErrors = [
+      'ETIMEDOUT',
+      'ECONNRESET',
+      'ENOTFOUND',
+      'Connection reset'
+    ];
+    const isNetworkError = networkErrors.some(msg => message.includes(msg));
+    const isServerError = status && status >= 500 && status < 600;
+    const isTimeoutError = message.includes('timeout') || message.includes('Timeout');
+
+    return isNetworkError || isServerError || isTimeoutError;
   }
 
   sleep(ms) {

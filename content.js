@@ -102,7 +102,7 @@
     }
     async retry(fn, { name = "\u4EFB\u52A1", onRetry } = {}) {
       let lastError;
-      for (let attempt = 1; attempt <= this.maxRetries; attempt += 1) {
+      for (let attempt = 0; attempt < this.maxRetries; attempt += 1) {
         try {
           return await fn(attempt);
         } catch (error) {
@@ -110,7 +110,7 @@
           if (!this.isRetryable(error)) {
             throw error;
           }
-          const delay = this.baseDelay * Math.pow(2, attempt - 1);
+          const delay = this.baseDelay * Math.pow(2, attempt);
           if (typeof onRetry === "function") {
             onRetry({ attempt, delay, error, name });
           }
@@ -120,17 +120,21 @@
       throw new Error(`${name}: \u5931\u8D25 ${this.maxRetries} \u6B21\u540E\u653E\u5F03\u3002\u6700\u540E\u9519\u8BEF: ${lastError?.message || "\u672A\u77E5\u9519\u8BEF"}`);
     }
     defaultRetryable(error) {
-      const retryableErrors = [
-        "Network timeout",
-        "Connection reset",
-        "5xx",
-        "ETIMEDOUT",
-        "ECONNRESET",
-        "Failed to fetch"
-      ];
       const message = error?.message || "";
       const status = error?.status || error?.response?.status;
-      return retryableErrors.some((msg) => message.includes(msg)) || status && status >= 500;
+      if (status && status >= 400 && status < 500) {
+        return false;
+      }
+      const networkErrors = [
+        "ETIMEDOUT",
+        "ECONNRESET",
+        "ENOTFOUND",
+        "Connection reset"
+      ];
+      const isNetworkError = networkErrors.some((msg) => message.includes(msg));
+      const isServerError = status && status >= 500 && status < 600;
+      const isTimeoutError = message.includes("timeout") || message.includes("Timeout");
+      return isNetworkError || isServerError || isTimeoutError;
     }
     sleep(ms) {
       return new Promise((resolve) => setTimeout(resolve, ms));
@@ -519,7 +523,7 @@
       }, {
         name: "Twitter\u56FE\u7247\u4E0B\u8F7D",
         onRetry: ({ attempt }) => {
-          if (attempt === 2) {
+          if (attempt === 1) {
             chrome.runtime.sendMessage({
               action: "notify",
               level: "warning",
@@ -641,6 +645,91 @@
     }
   };
 
+  // src/utils/pixiv-dom-cache.js
+  var PixivDOMCache = class {
+    constructor() {
+      this.containerCache = /* @__PURE__ */ new WeakMap();
+      this.buttonCache = /* @__PURE__ */ new WeakMap();
+      this.lastUrl = window.location.href;
+      this.stats = {
+        cacheHits: 0,
+        cacheMisses: 0,
+        totalQueries: 0
+      };
+      this.setupUrlWatcher();
+    }
+    setupUrlWatcher() {
+      if (this.urlObserver)
+        return;
+      this.urlObserver = new MutationObserver(() => {
+        this.onUrlChange();
+      });
+      this.urlObserver.observe(document.documentElement, {
+        childList: true,
+        subtree: true
+      });
+      window.addEventListener("popstate", () => this.onUrlChange());
+    }
+    onUrlChange() {
+      const currentUrl = window.location.href;
+      if (currentUrl !== this.lastUrl) {
+        this.lastUrl = currentUrl;
+        this.resetStats();
+      }
+    }
+    setContainer(button, container) {
+      this.buttonCache.set(button, container);
+      this.containerCache.set(container, {
+        images: Array.from(container.querySelectorAll("img")),
+        links: Array.from(container.querySelectorAll('a[href*="/artworks/"]')),
+        userLinks: Array.from(container.querySelectorAll('a[href*="/users/"]')),
+        timestamp: Date.now()
+      });
+    }
+    getContainer(button) {
+      this.stats.totalQueries += 1;
+      const container = this.buttonCache.get(button) || null;
+      if (!container) {
+        this.stats.cacheMisses += 1;
+        return null;
+      }
+      if (!document.body.contains(container)) {
+        this.buttonCache.delete(button);
+        this.stats.cacheMisses += 1;
+        return null;
+      }
+      this.stats.cacheHits += 1;
+      return container;
+    }
+    getContainerMetadata(container) {
+      if (!container || !document.body.contains(container)) {
+        if (container) {
+          this.containerCache.delete(container);
+        }
+        return null;
+      }
+      return this.containerCache.get(container) || null;
+    }
+    clear() {
+      this.containerCache = /* @__PURE__ */ new WeakMap();
+      this.buttonCache = /* @__PURE__ */ new WeakMap();
+      this.resetStats();
+    }
+    resetStats() {
+      this.stats.cacheHits = 0;
+      this.stats.cacheMisses = 0;
+      this.stats.totalQueries = 0;
+    }
+    getStats() {
+      const total = this.stats.cacheHits + this.stats.cacheMisses;
+      return {
+        ...this.stats,
+        hitRate: total ? this.stats.cacheHits / total : 0
+      };
+    }
+  };
+  var pixivCache = new PixivDOMCache();
+
   // src/platforms/pixiv/pixiv-detector.js
   function findPixivBookmarkButton(target) {
     let button = target.closest('[class*="bookmark"]');
@@ -667,10 +756,20 @@
     return hasImage && hasArtworkLink && hasIcon && !isFollowButton;
   }
   function findArtworkContainer(bookmarkButton) {
-    if (isRecommendationFeed(bookmarkButton)) {
-      return findRecommendationArtworkContainer(bookmarkButton);
+    const cached = pixivCache.getContainer(bookmarkButton);
+    if (cached) {
+      return cached;
     }
-    return findFollowingArtworkContainer(bookmarkButton);
+    let container;
+    if (isRecommendationFeed(bookmarkButton)) {
+      container = findRecommendationArtworkContainer(bookmarkButton);
+    } else {
+      container = findFollowingArtworkContainer(bookmarkButton);
+    }
+    if (container) {
+      pixivCache.setContainer(bookmarkButton, container);
+    }
+    return container;
   }
   function isRecommendationFeed(bookmarkButton) {
     const workContentContainer = bookmarkButton.closest('[data-ga4-label="work_content"]');
@@ -711,6 +810,9 @@
     return null;
   }
   function findRecommendationArtworkContainer(bookmarkButton) {
+    const allImages = Array.from(document.getElementsByTagName("img"));
+    const allLinks = Array.from(document.querySelectorAll('a[href*="/artworks/"]'));
+    const allButtons = Array.from(document.querySelectorAll('button[data-ga4-label="bookmark_button"]'));
     let current = bookmarkButton;
     let attempts = 0;
     while (current && current !== document.body && attempts < 8) {
@@ -718,45 +820,49 @@
       attempts += 1;
       if (!current)
         break;
-      const images = Array.from(current.querySelectorAll("img"));
-      const artworkLinks = Array.from(current.querySelectorAll('a[href*="/artworks/"]'));
-      const bookmarkButtons = Array.from(current.querySelectorAll('button[data-ga4-label="bookmark_button"]'));
-      if (images.length > 0 && artworkLinks.length > 0 && bookmarkButtons.length === 1) {
-        if (bookmarkButtons[0] === bookmarkButton || bookmarkButtons[0].contains(bookmarkButton)) {
-          return current;
-        }
+      const imageCount = countContained(allImages, current, 1);
+      const linkCount = countContained(allLinks, current, 3);
+      const buttonInfo = countButtons(allButtons, current, bookmarkButton, 2);
+      if (imageCount > 0 && linkCount > 0 && buttonInfo.count === 1 && buttonInfo.matches) {
+        return current;
       }
-    }
-    current = bookmarkButton;
-    attempts = 0;
-    while (current && current !== document.body && attempts < 8) {
-      current = current.parentElement;
-      attempts += 1;
-      if (!current)
-        break;
       const entityId = current.getAttribute("data-ga4-entity-id");
       if (entityId && entityId.startsWith("illust/")) {
-        const images = Array.from(current.querySelectorAll("img"));
-        const artworkLinks = Array.from(current.querySelectorAll('a[href*="/artworks/"]'));
-        if (images.length > 0 && artworkLinks.length > 0) {
+        if (imageCount > 0 && linkCount > 0) {
           return current;
         }
       }
-    }
-    current = bookmarkButton;
-    attempts = 0;
-    while (current && current !== document.body && attempts < 5) {
-      current = current.parentElement;
-      attempts += 1;
-      if (!current)
-        break;
-      const images = Array.from(current.querySelectorAll("img"));
-      const artworkLinks = Array.from(current.querySelectorAll('a[href*="/artworks/"]'));
-      if (images.length > 0 && artworkLinks.length > 0 && artworkLinks.length <= 2) {
+      if (imageCount > 0 && linkCount > 0 && linkCount <= 2) {
         return current;
       }
     }
     return findFollowingArtworkContainer(bookmarkButton);
+  }
+  function countContained(nodes, container, maxCount) {
+    let count = 0;
+    for (const node of nodes) {
+      if (!container.contains(node))
+        continue;
+      count += 1;
+      if (maxCount && count >= maxCount)
+        break;
+    }
+    return count;
+  }
+  function countButtons(nodes, container, targetButton, maxCount) {
+    let count = 0;
+    let matches = false;
+    for (const node of nodes) {
+      if (!container.contains(node))
+        continue;
+      count += 1;
+      if (node === targetButton || node.contains(targetButton)) {
+        matches = true;
+      }
+      if (maxCount && count >= maxCount)
+        break;
+    }
+    return { count, matches };
   }
 
   // src/platforms/pixiv/pixiv-api.js
@@ -785,7 +891,7 @@
   // src/core/proxy-manager.js
   var ProxyManager = class {
     constructor() {
-      this.proxyDomain = "pixiv.zhongrui.app";
+      this.proxyDomain = "YOUR_PROXY_DOMAIN_HERE";
     }
     async load() {
       return Promise.resolve();
@@ -813,6 +919,8 @@
       if (!bookmarkButton)
         return false;
       await this.proxyManager.load();
+      const artworkContainer = findArtworkContainer(bookmarkButton);
+      const metadata = artworkContainer ? pixivCache.getContainerMetadata(artworkContainer) : null;
       const url = window.location.href;
       let illustId;
       let authorId = "unknown_author";
@@ -821,7 +929,7 @@
       let totalImages = 1;
       if (url.startsWith("https://www.pixiv.net/artworks/")) {
         illustId = url.match(/artworks\/(\d+)/)?.[1] || "unknown_id";
-        const authorLinkElement = document.querySelector('a[href*="/users/"]');
+        const authorLinkElement = metadata?.userLinks?.[0] || document.querySelector('a[href*="/users/"]');
         if (authorLinkElement) {
           authorId = authorLinkElement.href.match(/users\/(\d+)/)?.[1] || "unknown_author";
           authorName = authorLinkElement.textContent.trim();
@@ -832,71 +940,72 @@
             }
           }
         }
-        const mainImage = document.querySelector("main img");
-        if (mainImage) {
-          images = [mainImage];
-          const pageIndicator = document.querySelector("[data-gtm-value]");
-          if (pageIndicator) {
-            const match = pageIndicator.textContent.match(/(\d+)\/(\d+)/);
-            if (match)
-              totalImages = parseInt(match[2], 10);
+        if (metadata?.images?.length) {
+          images = metadata.images;
+        } else {
+          const mainImage = document.querySelector("main img");
+          if (mainImage) {
+            images = [mainImage];
           }
         }
-      } else {
-        const artworkContainer = findArtworkContainer(bookmarkButton);
-        if (artworkContainer) {
-          const artworkLinks = artworkContainer.querySelectorAll('a[href*="/artworks/"]');
-          let mainArtworkLink = null;
-          if (artworkLinks.length > 1) {
-            mainArtworkLink = Array.from(artworkLinks).reduce((largest, current) => {
+        const pageIndicator = document.querySelector("[data-gtm-value]");
+        if (pageIndicator) {
+          const match = pageIndicator.textContent.match(/(\d+)\/(\d+)/);
+          if (match)
+            totalImages = parseInt(match[2], 10);
+        }
+      } else if (artworkContainer) {
+        const artworkLinks = metadata?.links?.length ? metadata.links : Array.from(artworkContainer.querySelectorAll('a[href*="/artworks/"]'));
+        let mainArtworkLink = null;
+        if (artworkLinks.length > 1) {
+          mainArtworkLink = Array.from(artworkLinks).reduce((largest, current) => {
+            const largestRect = largest.getBoundingClientRect();
+            const currentRect = current.getBoundingClientRect();
+            return currentRect.width * currentRect.height > largestRect.width * largestRect.height ? current : largest;
+          });
+        } else {
+          mainArtworkLink = artworkLinks[0];
+        }
+        if (mainArtworkLink) {
+          illustId = mainArtworkLink.href.match(/artworks\/(\d+)/)?.[1];
+        } else {
+          illustId = artworkContainer.querySelector("[data-gtm-value]")?.getAttribute("data-gtm-value");
+        }
+        const authorLink = metadata?.userLinks?.[0] || artworkContainer.querySelector('a[href*="/users/"]');
+        if (authorLink) {
+          authorId = authorLink.href.match(/users\/(\d+)/)?.[1] || "unknown_author";
+          authorName = authorLink.textContent.trim();
+          if (!authorName || authorName.includes("\u67E5\u770B") || authorName.includes("\u66F4\u591A") || authorName.length > 50) {
+            const authorImg = authorLink.querySelector("img");
+            if (authorImg && authorImg.alt && !authorImg.alt.includes("\u7684\u63D2\u753B")) {
+              authorName = authorImg.alt.trim();
+            }
+          }
+        }
+        const allImages = metadata?.images?.length ? metadata.images : Array.from(artworkContainer.querySelectorAll("img"));
+        let mainImage = null;
+        if (allImages.length > 1) {
+          const largeImages = allImages.filter((img) => {
+            const rect = img.getBoundingClientRect();
+            return rect.width > 80 && rect.height > 80;
+          });
+          if (largeImages.length > 0) {
+            mainImage = largeImages.reduce((largest, current) => {
               const largestRect = largest.getBoundingClientRect();
               const currentRect = current.getBoundingClientRect();
               return currentRect.width * currentRect.height > largestRect.width * largestRect.height ? current : largest;
             });
-          } else {
-            mainArtworkLink = artworkLinks[0];
           }
-          if (mainArtworkLink) {
-            illustId = mainArtworkLink.href.match(/artworks\/(\d+)/)?.[1];
-          } else {
-            illustId = artworkContainer.querySelector("[data-gtm-value]")?.getAttribute("data-gtm-value");
-          }
-          const authorLink = artworkContainer.querySelector('a[href*="/users/"]');
-          if (authorLink) {
-            authorId = authorLink.href.match(/users\/(\d+)/)?.[1] || "unknown_author";
-            authorName = authorLink.textContent.trim();
-            if (!authorName || authorName.includes("\u67E5\u770B") || authorName.includes("\u66F4\u591A") || authorName.length > 50) {
-              const authorImg = authorLink.querySelector("img");
-              if (authorImg && authorImg.alt && !authorImg.alt.includes("\u7684\u63D2\u753B")) {
-                authorName = authorImg.alt.trim();
-              }
-            }
-          }
-          const allImages = Array.from(artworkContainer.querySelectorAll("img"));
-          let mainImage = null;
-          if (allImages.length > 1) {
-            const largeImages = allImages.filter((img) => {
-              const rect = img.getBoundingClientRect();
-              return rect.width > 80 && rect.height > 80;
-            });
-            if (largeImages.length > 0) {
-              mainImage = largeImages.reduce((largest, current) => {
-                const largestRect = largest.getBoundingClientRect();
-                const currentRect = current.getBoundingClientRect();
-                return currentRect.width * currentRect.height > largestRect.width * largestRect.height ? current : largest;
-              });
-            }
-          } else {
-            mainImage = allImages[0];
-          }
-          if (mainImage) {
-            images = [mainImage];
-            const multiImageIndicator = artworkContainer.querySelector('[class*="sc-"], span');
-            if (multiImageIndicator) {
-              const match = multiImageIndicator.textContent.match(/(\d+)/);
-              if (match && parseInt(match[1], 10) > 1) {
-                totalImages = parseInt(match[1], 10);
-              }
+        } else {
+          mainImage = allImages[0];
+        }
+        if (mainImage) {
+          images = [mainImage];
+          const multiImageIndicator = artworkContainer.querySelector('[class*="sc-"], span');
+          if (multiImageIndicator) {
+            const match = multiImageIndicator.textContent.match(/(\d+)/);
+            if (match && parseInt(match[1], 10) > 1) {
+              totalImages = parseInt(match[1], 10);
             }
           }
         }
@@ -973,7 +1082,7 @@
         await this.retryManager.retry(() => attemptDownload(url), {
           name: "Pixiv\u56FE\u7247\u4E0B\u8F7D",
           onRetry: ({ attempt }) => {
-            if (attempt === 2) {
+            if (attempt === 1) {
               chrome.runtime.sendMessage({
                 action: "notify",
                 level: "warning",
@@ -988,19 +1097,7 @@
         if (!retryUrl) {
           throw error;
         }
-        await this.retryManager.retry(() => attemptDownload(retryUrl), {
-          name: "Pixiv\u56FE\u7247\u4E0B\u8F7D",
-          onRetry: ({ attempt }) => {
-            if (attempt === 2) {
-              chrome.runtime.sendMessage({
-                action: "notify",
-                level: "warning",
-                title: "\u4E0B\u8F7D\u91CD\u8BD5\u4E2D",
-                message: "Pixiv\u56FE\u7247\u6B63\u5728\u91CD\u8BD5..."
-              });
-            }
-          }
-        });
+        await attemptDownload(retryUrl);
       }
     }
   };

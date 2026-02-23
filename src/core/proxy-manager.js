@@ -4,8 +4,9 @@
  */
 export class ProxyManager {
   constructor() {
-    // 硬编码代理域名
-    this.proxyDomain = 'pixiv.zhongrui.app';
+    // 硬编码代理域名 - 请替换为你自己的 Cloudflare 反代域名
+    // 格式示例: pixiv.example.com
+    this.proxyDomain = 'YOUR_PROXY_DOMAIN_HERE';
   }
 
   async load() {

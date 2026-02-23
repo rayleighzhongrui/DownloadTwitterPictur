@@ -2,6 +2,7 @@ import { BasePlatform } from '../base-platform.js';
 import { findPixivBookmarkButton, findArtworkContainer } from './pixiv-detector.js';
 import { buildOriginalImageUrl } from './pixiv-api.js';
 import { ProxyManager } from '../../core/proxy-manager.js';
+import { pixivCache } from '../../utils/pixiv-dom-cache.js';
 
 export class PixivPlatform extends BasePlatform {
   constructor({ downloader, retryManager }) {
@@ -19,6 +20,9 @@ export class PixivPlatform extends BasePlatform {
 
     await this.proxyManager.load();
 
+    const artworkContainer = findArtworkContainer(bookmarkButton);
+    const metadata = artworkContainer ? pixivCache.getContainerMetadata(artworkContainer) : null;
+
     const url = window.location.href;
     let illustId;
     let authorId = 'unknown_author';
@@ -29,7 +33,8 @@ export class PixivPlatform extends BasePlatform {
     if (url.startsWith('https://www.pixiv.net/artworks/')) {
       illustId = url.match(/artworks\/(\d+)/)?.[1] || 'unknown_id';
 
-      const authorLinkElement = document.querySelector('a[href*="/users/"]');
+      const authorLinkElement = metadata?.userLinks?.[0]
+        || document.querySelector('a[href*="/users/"]');
       if (authorLinkElement) {
         authorId = authorLinkElement.href.match(/users\/(\d+)/)?.[1] || 'unknown_author';
         authorName = authorLinkElement.textContent.trim();
@@ -41,76 +46,83 @@ export class PixivPlatform extends BasePlatform {
         }
       }
 
-      const mainImage = document.querySelector('main img');
-      if (mainImage) {
-        images = [mainImage];
-        const pageIndicator = document.querySelector('[data-gtm-value]');
-        if (pageIndicator) {
-          const match = pageIndicator.textContent.match(/(\d+)\/(\d+)/);
-          if (match) totalImages = parseInt(match[2], 10);
+      if (metadata?.images?.length) {
+        images = metadata.images;
+      } else {
+        const mainImage = document.querySelector('main img');
+        if (mainImage) {
+          images = [mainImage];
         }
       }
-    } else {
-      const artworkContainer = findArtworkContainer(bookmarkButton);
-      if (artworkContainer) {
-        const artworkLinks = artworkContainer.querySelectorAll('a[href*="/artworks/"]');
+
+      const pageIndicator = document.querySelector('[data-gtm-value]');
+      if (pageIndicator) {
+        const match = pageIndicator.textContent.match(/(\d+)\/(\d+)/);
+        if (match) totalImages = parseInt(match[2], 10);
+      }
+    } else if (artworkContainer) {
+      const artworkLinks = metadata?.links?.length
+        ? metadata.links
+        : Array.from(artworkContainer.querySelectorAll('a[href*="/artworks/"]'));
         let mainArtworkLink = null;
 
-        if (artworkLinks.length > 1) {
-          mainArtworkLink = Array.from(artworkLinks).reduce((largest, current) => {
+      if (artworkLinks.length > 1) {
+        mainArtworkLink = Array.from(artworkLinks).reduce((largest, current) => {
             const largestRect = largest.getBoundingClientRect();
             const currentRect = current.getBoundingClientRect();
             return (currentRect.width * currentRect.height) > (largestRect.width * largestRect.height) ? current : largest;
           });
-        } else {
-          mainArtworkLink = artworkLinks[0];
-        }
+      } else {
+        mainArtworkLink = artworkLinks[0];
+      }
 
-        if (mainArtworkLink) {
-          illustId = mainArtworkLink.href.match(/artworks\/(\d+)/)?.[1];
-        } else {
-          illustId = artworkContainer.querySelector('[data-gtm-value]')?.getAttribute('data-gtm-value');
-        }
+      if (mainArtworkLink) {
+        illustId = mainArtworkLink.href.match(/artworks\/(\d+)/)?.[1];
+      } else {
+        illustId = artworkContainer.querySelector('[data-gtm-value]')?.getAttribute('data-gtm-value');
+      }
 
-        const authorLink = artworkContainer.querySelector('a[href*="/users/"]');
-        if (authorLink) {
-          authorId = authorLink.href.match(/users\/(\d+)/)?.[1] || 'unknown_author';
-          authorName = authorLink.textContent.trim();
-          if (!authorName || authorName.includes('查看') || authorName.includes('更多') || authorName.length > 50) {
-            const authorImg = authorLink.querySelector('img');
-            if (authorImg && authorImg.alt && !authorImg.alt.includes('的插画')) {
-              authorName = authorImg.alt.trim();
-            }
+      const authorLink = metadata?.userLinks?.[0]
+        || artworkContainer.querySelector('a[href*="/users/"]');
+      if (authorLink) {
+        authorId = authorLink.href.match(/users\/(\d+)/)?.[1] || 'unknown_author';
+        authorName = authorLink.textContent.trim();
+        if (!authorName || authorName.includes('查看') || authorName.includes('更多') || authorName.length > 50) {
+          const authorImg = authorLink.querySelector('img');
+          if (authorImg && authorImg.alt && !authorImg.alt.includes('的插画')) {
+            authorName = authorImg.alt.trim();
           }
         }
+      }
 
-        const allImages = Array.from(artworkContainer.querySelectorAll('img'));
-        let mainImage = null;
+      const allImages = metadata?.images?.length
+        ? metadata.images
+        : Array.from(artworkContainer.querySelectorAll('img'));
+      let mainImage = null;
 
-        if (allImages.length > 1) {
-          const largeImages = allImages.filter(img => {
-            const rect = img.getBoundingClientRect();
-            return rect.width > 80 && rect.height > 80;
+      if (allImages.length > 1) {
+        const largeImages = allImages.filter(img => {
+          const rect = img.getBoundingClientRect();
+          return rect.width > 80 && rect.height > 80;
+        });
+        if (largeImages.length > 0) {
+          mainImage = largeImages.reduce((largest, current) => {
+            const largestRect = largest.getBoundingClientRect();
+            const currentRect = current.getBoundingClientRect();
+            return (currentRect.width * currentRect.height) > (largestRect.width * largestRect.height) ? current : largest;
           });
-          if (largeImages.length > 0) {
-            mainImage = largeImages.reduce((largest, current) => {
-              const largestRect = largest.getBoundingClientRect();
-              const currentRect = current.getBoundingClientRect();
-              return (currentRect.width * currentRect.height) > (largestRect.width * largestRect.height) ? current : largest;
-            });
-          }
-        } else {
-          mainImage = allImages[0];
         }
+      } else {
+        mainImage = allImages[0];
+      }
 
-        if (mainImage) {
-          images = [mainImage];
-          const multiImageIndicator = artworkContainer.querySelector('[class*="sc-"], span');
-          if (multiImageIndicator) {
-            const match = multiImageIndicator.textContent.match(/(\d+)/);
-            if (match && parseInt(match[1], 10) > 1) {
-              totalImages = parseInt(match[1], 10);
-            }
+      if (mainImage) {
+        images = [mainImage];
+        const multiImageIndicator = artworkContainer.querySelector('[class*="sc-"], span');
+        if (multiImageIndicator) {
+          const match = multiImageIndicator.textContent.match(/(\d+)/);
+          if (match && parseInt(match[1], 10) > 1) {
+            totalImages = parseInt(match[1], 10);
           }
         }
       }
@@ -198,7 +210,7 @@ export class PixivPlatform extends BasePlatform {
       await this.retryManager.retry(() => attemptDownload(url), {
         name: 'Pixiv图片下载',
         onRetry: ({ attempt }) => {
-          if (attempt === 2) {
+          if (attempt === 1) {
             chrome.runtime.sendMessage({
               action: 'notify',
               level: 'warning',
@@ -217,19 +229,7 @@ export class PixivPlatform extends BasePlatform {
       if (!retryUrl) {
         throw error;
       }
-      await this.retryManager.retry(() => attemptDownload(retryUrl), {
-        name: 'Pixiv图片下载',
-        onRetry: ({ attempt }) => {
-          if (attempt === 2) {
-            chrome.runtime.sendMessage({
-              action: 'notify',
-              level: 'warning',
-              title: '下载重试中',
-              message: 'Pixiv图片正在重试...'
-            });
-          }
-        }
-      });
+      await attemptDownload(retryUrl);
     }
   }
 }
