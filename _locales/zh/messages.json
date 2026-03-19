@@ -1,0 +1,82 @@
+{
+  "extensionName": {
+    "message": "下载Twitter和Pixiv原图",
+    "description": "Name of the extension"
+  },
+  "extensionDescription": {
+    "message": "在Twitter、Pixiv中点赞/收藏时可立即下载原图，默认文件名为作者+作品ID+时间",
+    "description": "Description of the extension"
+  },
+  "popupTitle": {
+    "message": "文件名格式设置",
+    "description": "Title of the popup settings page"
+  },
+  "twitterLabel": {
+    "message": "Twitter",
+    "description": "Label for Twitter switch"
+  },
+  "pixivLabel": {
+    "message": "Pixiv",
+    "description": "Label for Pixiv switch"
+  },
+  "twitterFormatTitle": {
+    "message": "Twitter文件名格式",
+    "description": "Title for Twitter format section"
+  },
+  "pixivFormatTitle": {
+    "message": "Pixiv文件名格式",
+    "description": "Title for Pixiv format section"
+  },
+  "formatAccount": {
+    "message": "账号",
+    "description": "Format option for account name"
+  },
+  "formatTweetId": {
+    "message": "推文ID",
+    "description": "Format option for tweet ID"
+  },
+  "formatTweetTime": {
+    "message": "推文时间",
+    "description": "Format option for tweet time"
+  },
+  "formatDownloadDate": {
+    "message": "下载时间",
+    "description": "Format option for download date"
+  },
+  "formatAuthorName": {
+    "message": "作者名称",
+    "description": "Format option for author name"
+  },
+  "formatAuthorId": {
+    "message": "作者ID",
+    "description": "Format option for author ID"
+  },
+  "formatIllustId": {
+    "message": "作品ID",
+    "description": "Format option for illustration ID"
+  },
+  "exampleTwitterImage": {
+    "message": "Twitter图片示例",
+    "description": "Example title for Twitter images"
+  },
+  "exampleTwitterVideo": {
+    "message": "Twitter视频示例",
+    "description": "Example title for Twitter videos"
+  },
+  "examplePixiv": {
+    "message": "Pixiv文件名示例",
+    "description": "Example title for Pixiv files"
+  },
+  "saveButton": {
+    "message": "保存设置",
+    "description": "Save button text"
+  },
+  "saveSuccess": {
+    "message": "保存成功！",
+    "description": "Success message"
+  },
+  "settingsUpdated": {
+    "message": "设置已更新",
+    "description": "Settings updated message"
+  }
+}

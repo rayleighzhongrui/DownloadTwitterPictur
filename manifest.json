@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "点赞下载推特&PIXIV原图(DownloadTwitterAndPixivOriginImageByFavorite)",
+  "default_locale": "en",
+  "name": "__MSG_extensionName__",
   "version": "1.0",
-  "description": "在推特、PIXIV中点赞可立即下载原图，默认文件名为博主+推文ID+时间; Download Twitter and Pixiv Origin Image with Favorites",
+  "description": "__MSG_extensionDescription__",
   "icons": {
     "48": "images/icon.png"
   },
@@ -19,7 +20,7 @@
   "action": {
     "default_icon": "images/icon.png",
     "default_popup": "popup.html",
-    "default_title": "Twitter&Pixiv Image Downloader"
+    "default_title": "__MSG_extensionName__"
   },
   "host_permissions": [
     "*://*.pixiv.net/*",

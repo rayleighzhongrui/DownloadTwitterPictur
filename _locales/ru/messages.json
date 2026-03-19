@@ -1,0 +1,82 @@
+{
+  "extensionName": {
+    "message": "Загрузка оригинальных изображений Twitter & Pixiv",
+    "description": "Name of the extension"
+  },
+  "extensionDescription": {
+    "message": "Скачивайте оригинальные изображения с Twitter и Pixiv при лайке/закладке. Имя файла по умолчанию: автор+ID поста+время",
+    "description": "Description of the extension"
+  },
+  "popupTitle": {
+    "message": "Настройки формата имени файла",
+    "description": "Title of the popup settings page"
+  },
+  "twitterLabel": {
+    "message": "Twitter",
+    "description": "Label for Twitter switch"
+  },
+  "pixivLabel": {
+    "message": "Pixiv",
+    "description": "Label for Pixiv switch"
+  },
+  "twitterFormatTitle": {
+    "message": "Формат имени файла Twitter",
+    "description": "Title for Twitter format section"
+  },
+  "pixivFormatTitle": {
+    "message": "Формат имени файла Pixiv",
+    "description": "Title for Pixiv format section"
+  },
+  "formatAccount": {
+    "message": "Аккаунт",
+    "description": "Format option for account name"
+  },
+  "formatTweetId": {
+    "message": "ID твита",
+    "description": "Format option for tweet ID"
+  },
+  "formatTweetTime": {
+    "message": "Время твита",
+    "description": "Format option for tweet time"
+  },
+  "formatDownloadDate": {
+    "message": "Дата загрузки",
+    "description": "Format option for download date"
+  },
+  "formatAuthorName": {
+    "message": "Имя автора",
+    "description": "Format option for author name"
+  },
+  "formatAuthorId": {
+    "message": "ID автора",
+    "description": "Format option for author ID"
+  },
+  "formatIllustId": {
+    "message": "ID иллюстрации",
+    "description": "Format option for illustration ID"
+  },
+  "exampleTwitterImage": {
+    "message": "Пример изображения Twitter",
+    "description": "Example title for Twitter images"
+  },
+  "exampleTwitterVideo": {
+    "message": "Пример видео Twitter",
+    "description": "Example title for Twitter videos"
+  },
+  "examplePixiv": {
+    "message": "Пример имени файла Pixiv",
+    "description": "Example title for Pixiv files"
+  },
+  "saveButton": {
+    "message": "Сохранить настройки",
+    "description": "Save button text"
+  },
+  "saveSuccess": {
+    "message": "Успешно сохранено!",
+    "description": "Success message"
+  },
+  "settingsUpdated": {
+    "message": "Настройки обновлены",
+    "description": "Settings updated message"
+  }
+}

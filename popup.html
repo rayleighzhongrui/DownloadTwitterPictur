@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>文件名格式设置</title>
+    <title data-i18n="popupTitle">Filename Format Settings</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
         
@@ -361,12 +361,12 @@
         <!-- 右侧设置区域 -->
         <div class="settings-panel">
             <div class="settings-content">
-                <div class="title">📁 文件名格式设置</div>
+                <div class="title" data-i18n="popupTitle">📁 Filename Format Settings</div>
 
                 <!-- 平台开关 -->
                 <div class="switches-section">
                     <div class="switch-container">
-                        <span>🐦 Twitter</span>
+                        <span>🐦 <span data-i18n="twitterLabel">Twitter</span></span>
                         <label class="switch">
                             <input type="checkbox" id="twitterSwitch">
                             <span class="slider"></span>
@@ -374,7 +374,7 @@
                     </div>
 
                     <div class="switch-container">
-                        <span>🎨 Pixiv</span>
+                        <span>🎨 <span data-i18n="pixivLabel">Pixiv</span></span>
                         <label class="switch">
                             <input type="checkbox" id="pixivSwitch">
                             <span class="slider"></span>
@@ -384,47 +384,47 @@
 
                 <!-- Twitter格式配置 -->
                 <div class="format-section">
-                    <div class="format-title">推特文件名格式</div>
+                    <div class="format-title" data-i18n="twitterFormatTitle">Twitter Filename Format</div>
                     <div class="format-selection" id="twitterFormat">
-                        <div class="format-option" data-value="account">推特账号</div>
-                        <div class="format-option" data-value="tweetId">推特ID</div>
-                        <div class="format-option" data-value="tweetTime">推文时间</div>
-                        <div class="format-option" data-value="downloadDate">下载时间</div>
+                        <div class="format-option" data-value="account"><span data-i18n="formatAccount">Account</span></div>
+                        <div class="format-option" data-value="tweetId"><span data-i18n="formatTweetId">Tweet ID</span></div>
+                        <div class="format-option" data-value="tweetTime"><span data-i18n="formatTweetTime">Tweet Time</span></div>
+                        <div class="format-option" data-value="downloadDate"><span data-i18n="formatDownloadDate">Download Date</span></div>
                     </div>
                 </div>
 
                 <!-- Pixiv格式配置 -->
                 <div class="format-section">
-                    <div class="format-title">Pixiv文件名格式</div>
+                    <div class="format-title" data-i18n="pixivFormatTitle">Pixiv Filename Format</div>
                     <div class="format-selection" id="pixivFormat">
-                        <div class="format-option" data-value="authorName">作者名称</div>
-                        <div class="format-option" data-value="authorId">作者ID</div>
-                        <div class="format-option" data-value="illustId">作品ID</div>
-                        <div class="format-option" data-value="downloadDate">下载时间</div>
+                        <div class="format-option" data-value="authorName"><span data-i18n="formatAuthorName">Author Name</span></div>
+                        <div class="format-option" data-value="authorId"><span data-i18n="formatAuthorId">Author ID</span></div>
+                        <div class="format-option" data-value="illustId"><span data-i18n="formatIllustId">Illustration ID</span></div>
+                        <div class="format-option" data-value="downloadDate"><span data-i18n="formatDownloadDate">Download Date</span></div>
                     </div>
                 </div>
 
                 <!-- 文件名示例 -->
                 <div class="example-container">
-                    <div class="example-title">🖼️ 推特图片示例</div>
-                    <div id="twitterExample" class="example-filename">推特账号_推特ID_20230811.jpg</div>
-                    
-                    <div class="example-title">🎬 推特视频示例</div>
-                    <div id="twitterVideoExample" class="example-filename">推特账号_推特ID_1920x1080.mp4</div>
-                    
-                    <div class="example-title">🎭 Pixiv文件名示例</div>
-                    <div id="pixivExample" class="example-filename">作品ID_20230811.jpg</div>
+                    <div class="example-title" data-i18n="exampleTwitterImage">🖼️ Twitter Image Example</div>
+                    <div id="twitterExample" class="example-filename">account_tweetId_20230811.jpg</div>
+
+                    <div class="example-title" data-i18n="exampleTwitterVideo">🎬 Twitter Video Example</div>
+                    <div id="twitterVideoExample" class="example-filename">account_tweetId_1920x1080.mp4</div>
+
+                    <div class="example-title" data-i18n="examplePixiv">🎭 Pixiv Filename Example</div>
+                    <div id="pixivExample" class="example-filename">illustId_20230811.jpg</div>
                 </div>
 
-                <button id="saveButton">💾 保存设置</button>
+                <button id="saveButton"><span data-i18n="saveButton">💾 Save Settings</span></button>
             </div>
         </div>
     </div>
 
     <div id="successMessage" class="success-message">
         <div class="success-text">
-            ✅ 保存成功！<br>
-            <small>设置已更新</small>
+            ✅ <span data-i18n="saveSuccess">Successfully Saved!</span><br>
+            <small><span data-i18n="settingsUpdated">Settings Updated</span></small>
         </div>
     </div>
 
