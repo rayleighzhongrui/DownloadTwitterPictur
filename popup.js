@@ -6,8 +6,6 @@ async function applyI18n() {
 
     // 获取浏览器的语言设置（与网站使用的相同）
     const browserLang = navigator.language || navigator.userLanguage;
-    console.log('浏览器语言设置:', browserLang);
-    console.log('Chrome UI语言:', chrome.i18n.getUILanguage());
 
     // 映射浏览器语言到locale
     let locale = 'en';
@@ -25,15 +23,12 @@ async function applyI18n() {
         locale = 'cs';
     }
 
-    console.log('使用的locale:', locale);
-
     // 加载对应语言的翻译文件
     let translations;
     try {
         const response = await fetch(`_locales/${locale}/messages.json`);
         translations = await response.json();
     } catch (error) {
-        console.log('加载翻译文件失败，使用默认英语');
         const response = await fetch(`_locales/en/messages.json`);
         translations = await response.json();
     }
