@@ -11,8 +11,10 @@ async function applyI18n() {
     let locale = 'en';
     if (browserLang.startsWith('ja')) {
         locale = 'ja';
+    } else if (browserLang === 'zh-TW' || browserLang === 'zh-Hant' || browserLang === 'zh-Hant-TW') {
+        locale = 'zh-TW';
     } else if (browserLang.startsWith('zh')) {
-        locale = 'zh';
+        locale = 'zh-CN';
     } else if (browserLang.startsWith('de')) {
         locale = 'de';
     } else if (browserLang.startsWith('ko')) {
@@ -64,8 +66,10 @@ async function updateExample(containerId, exampleId) {
     let locale = 'en';
     if (browserLang.startsWith('ja')) {
         locale = 'ja';
+    } else if (browserLang === 'zh-TW' || browserLang === 'zh-Hant' || browserLang === 'zh-Hant-TW') {
+        locale = 'zh-TW';
     } else if (browserLang.startsWith('zh')) {
-        locale = 'zh';
+        locale = 'zh-CN';
     } else if (browserLang.startsWith('de')) {
         locale = 'de';
     } else if (browserLang.startsWith('ko')) {
@@ -96,7 +100,7 @@ async function updateExample(containerId, exampleId) {
             'illustId': '88669977_',
             'downloadDate': '20230811_'
         },
-        'zh': {
+        'zh-CN': {
             'account': '示例用户_',
             'tweetId': '88669977_',
             'tweetTime': '20230810_',
@@ -137,6 +141,15 @@ async function updateExample(containerId, exampleId) {
             'tweetId': '88669977_',
             'tweetTime': '20230810_',
             'authorName': 'PříkladAutor_',
+            'authorId': '12345_',
+            'illustId': '88669977_',
+            'downloadDate': '20230811_'
+        },
+        'zh-TW': {
+            'account': '範例使用者_',
+            'tweetId': '88669977_',
+            'tweetTime': '20230810_',
+            'authorName': '範例作者_',
             'authorId': '12345_',
             'illustId': '88669977_',
             'downloadDate': '20230811_'

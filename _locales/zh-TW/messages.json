@@ -1,0 +1,82 @@
+{
+  "extensionName": {
+    "message": "下載Twitter和Pixiv原圖",
+    "description": "Name of the extension"
+  },
+  "extensionDescription": {
+    "message": "在Twitter、Pixiv中按讚/收藏時可立即下載原圖，預設檔名為作者+作品ID+時間",
+    "description": "Description of the extension"
+  },
+  "popupTitle": {
+    "message": "檔名格式設定",
+    "description": "Title of the popup settings page"
+  },
+  "twitterLabel": {
+    "message": "Twitter",
+    "description": "Label for Twitter switch"
+  },
+  "pixivLabel": {
+    "message": "Pixiv",
+    "description": "Label for Pixiv switch"
+  },
+  "twitterFormatTitle": {
+    "message": "Twitter檔名格式",
+    "description": "Title for Twitter format section"
+  },
+  "pixivFormatTitle": {
+    "message": "Pixiv檔名格式",
+    "description": "Title for Pixiv format section"
+  },
+  "formatAccount": {
+    "message": "帳號",
+    "description": "Format option for account name"
+  },
+  "formatTweetId": {
+    "message": "推文ID",
+    "description": "Format option for tweet ID"
+  },
+  "formatTweetTime": {
+    "message": "推文時間",
+    "description": "Format option for tweet time"
+  },
+  "formatDownloadDate": {
+    "message": "下載時間",
+    "description": "Format option for download date"
+  },
+  "formatAuthorName": {
+    "message": "作者名稱",
+    "description": "Format option for author name"
+  },
+  "formatAuthorId": {
+    "message": "作者ID",
+    "description": "Format option for author ID"
+  },
+  "formatIllustId": {
+    "message": "作品ID",
+    "description": "Format option for illustration ID"
+  },
+  "exampleTwitterImage": {
+    "message": "Twitter圖片範例",
+    "description": "Example title for Twitter images"
+  },
+  "exampleTwitterVideo": {
+    "message": "Twitter影片範例",
+    "description": "Example title for Twitter videos"
+  },
+  "examplePixiv": {
+    "message": "Pixiv檔名範例",
+    "description": "Example title for Pixiv files"
+  },
+  "saveButton": {
+    "message": "儲存設定",
+    "description": "Save button text"
+  },
+  "saveSuccess": {
+    "message": "儲存成功！",
+    "description": "Success message"
+  },
+  "settingsUpdated": {
+    "message": "設定已更新",
+    "description": "Settings updated message"
+  }
+}
