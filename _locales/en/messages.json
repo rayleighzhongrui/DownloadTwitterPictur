@@ -1,0 +1,118 @@
+{
+  "extensionName": {
+    "message": "Download Twitter & Pixiv Original Images",
+    "description": "Name of the extension"
+  },
+  "extensionDescription": {
+    "message": "Download original images from Twitter and Pixiv when liking/bookmarking. Default filename: author+post ID+time",
+    "description": "Description of the extension"
+  },
+  "popupTitle": {
+    "message": "Filename Format Settings",
+    "description": "Title of the popup settings page"
+  },
+  "twitterLabel": {
+    "message": "Twitter",
+    "description": "Label for Twitter switch"
+  },
+  "pixivLabel": {
+    "message": "Pixiv",
+    "description": "Label for Pixiv switch"
+  },
+  "twitterFormatTitle": {
+    "message": "Twitter Filename Format",
+    "description": "Title for Twitter format section"
+  },
+  "pixivFormatTitle": {
+    "message": "Pixiv Filename Format",
+    "description": "Title for Pixiv format section"
+  },
+  "formatAccount": {
+    "message": "Account",
+    "description": "Format option for account name"
+  },
+  "formatTweetId": {
+    "message": "Tweet ID",
+    "description": "Format option for tweet ID"
+  },
+  "formatTweetTime": {
+    "message": "Tweet Time",
+    "description": "Format option for tweet time"
+  },
+  "formatDownloadDate": {
+    "message": "Download Date",
+    "description": "Format option for download date"
+  },
+  "formatAuthorName": {
+    "message": "Author Name",
+    "description": "Format option for author name"
+  },
+  "formatAuthorId": {
+    "message": "Author ID",
+    "description": "Format option for author ID"
+  },
+  "formatIllustId": {
+    "message": "Illustration ID",
+    "description": "Format option for illustration ID"
+  },
+  "exampleTwitterImage": {
+    "message": "Twitter Image Example",
+    "description": "Example title for Twitter images"
+  },
+  "exampleTwitterVideo": {
+    "message": "Twitter Video Example",
+    "description": "Example title for Twitter videos"
+  },
+  "examplePixiv": {
+    "message": "Pixiv Filename Example",
+    "description": "Example title for Pixiv files"
+  },
+  "saveButton": {
+    "message": "Save Settings",
+    "description": "Save button text"
+  },
+  "saveSuccess": {
+    "message": "Successfully Saved!",
+    "description": "Success message"
+  },
+  "settingsUpdated": {
+    "message": "Settings Updated",
+    "description": "Settings updated message"
+  },
+  "tabSettings": {
+    "message": "Settings",
+    "description": "Settings tab label"
+  },
+  "tabLogs": {
+    "message": "Logs",
+    "description": "Logs tab label"
+  },
+  "notificationLabel": {
+    "message": "Notifications",
+    "description": "Label for notification switch"
+  },
+  "errorLogTitle": {
+    "message": "Error Logs",
+    "description": "Title for error logs section"
+  },
+  "logFilterAll": {
+    "message": "All Platforms",
+    "description": "Log filter option for all platforms"
+  },
+  "clearLogs": {
+    "message": "Clear Logs",
+    "description": "Clear logs button text"
+  },
+  "exportLogs": {
+    "message": "Export Logs",
+    "description": "Export logs button text"
+  },
+  "noLogs": {
+    "message": "No error logs",
+    "description": "Empty state text when no error logs"
+  },
+  "noLogsToExport": {
+    "message": "No logs to export",
+    "description": "Alert message when there are no logs to export"
+  }
+}

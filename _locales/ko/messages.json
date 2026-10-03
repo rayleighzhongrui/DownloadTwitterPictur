@@ -1,0 +1,118 @@
+{
+  "extensionName": {
+    "message": "Twitter & Pixiv 원본 이미지 다운로드",
+    "description": "Name of the extension"
+  },
+  "extensionDescription": {
+    "message": "Twitter와 Pixiv에서 좋아요/북마크 시 원본 이미지를 다운로드합니다. 기본 파일명: 작성자+게시물 ID+시간",
+    "description": "Description of the extension"
+  },
+  "popupTitle": {
+    "message": "파일명 형식 설정",
+    "description": "Title of the popup settings page"
+  },
+  "twitterLabel": {
+    "message": "Twitter",
+    "description": "Label for Twitter switch"
+  },
+  "pixivLabel": {
+    "message": "Pixiv",
+    "description": "Label for Pixiv switch"
+  },
+  "twitterFormatTitle": {
+    "message": "Twitter 파일명 형식",
+    "description": "Title for Twitter format section"
+  },
+  "pixivFormatTitle": {
+    "message": "Pixiv 파일명 형식",
+    "description": "Title for Pixiv format section"
+  },
+  "formatAccount": {
+    "message": "계정",
+    "description": "Format option for account name"
+  },
+  "formatTweetId": {
+    "message": "트윗 ID",
+    "description": "Format option for tweet ID"
+  },
+  "formatTweetTime": {
+    "message": "트윗 시간",
+    "description": "Format option for tweet time"
+  },
+  "formatDownloadDate": {
+    "message": "다운로드 날짜",
+    "description": "Format option for download date"
+  },
+  "formatAuthorName": {
+    "message": "작가명",
+    "description": "Format option for author name"
+  },
+  "formatAuthorId": {
+    "message": "작가 ID",
+    "description": "Format option for author ID"
+  },
+  "formatIllustId": {
+    "message": "일러스트 ID",
+    "description": "Format option for illustration ID"
+  },
+  "exampleTwitterImage": {
+    "message": "Twitter 이미지 예시",
+    "description": "Example title for Twitter images"
+  },
+  "exampleTwitterVideo": {
+    "message": "Twitter 비디오 예시",
+    "description": "Example title for Twitter videos"
+  },
+  "examplePixiv": {
+    "message": "Pixiv 파일명 예시",
+    "description": "Example title for Pixiv files"
+  },
+  "saveButton": {
+    "message": "설정 저장",
+    "description": "Save button text"
+  },
+  "saveSuccess": {
+    "message": "성공적으로 저장되었습니다!",
+    "description": "Success message"
+  },
+  "settingsUpdated": {
+    "message": "설정이 업데이트되었습니다",
+    "description": "Settings updated message"
+  },
+  "tabSettings": {
+    "message": "설정",
+    "description": "Settings tab label"
+  },
+  "tabLogs": {
+    "message": "로그",
+    "description": "Logs tab label"
+  },
+  "notificationLabel": {
+    "message": "알림",
+    "description": "Label for notification switch"
+  },
+  "errorLogTitle": {
+    "message": "오류 로그",
+    "description": "Title for error logs section"
+  },
+  "logFilterAll": {
+    "message": "모든 플랫폼",
+    "description": "Log filter option for all platforms"
+  },
+  "clearLogs": {
+    "message": "로그 지우기",
+    "description": "Clear logs button text"
+  },
+  "exportLogs": {
+    "message": "로그 내보내기",
+    "description": "Export logs button text"
+  },
+  "noLogs": {
+    "message": "오류 로그 없음",
+    "description": "Empty state text when no error logs"
+  },
+  "noLogsToExport": {
+    "message": "내보낼 로그가 없습니다",
+    "description": "Alert message when there are no logs to export"
+  }
+}

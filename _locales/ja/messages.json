@@ -1,0 +1,118 @@
+{
+  "extensionName": {
+    "message": "Twitter & Pixivのオリジナル画像をダウンロード",
+    "description": "Name of the extension"
+  },
+  "extensionDescription": {
+    "message": "TwitterとPixivでいいね/ブックマークした際にオリジナル画像をダウンロードします。デフォルトのファイル名：作成者+投稿ID+時間",
+    "description": "Description of the extension"
+  },
+  "popupTitle": {
+    "message": "ファイル名形式の設定",
+    "description": "Title of the popup settings page"
+  },
+  "twitterLabel": {
+    "message": "Twitter",
+    "description": "Label for Twitter switch"
+  },
+  "pixivLabel": {
+    "message": "Pixiv",
+    "description": "Label for Pixiv switch"
+  },
+  "twitterFormatTitle": {
+    "message": "Twitterファイル名形式",
+    "description": "Title for Twitter format section"
+  },
+  "pixivFormatTitle": {
+    "message": "Pixivファイル名形式",
+    "description": "Title for Pixiv format section"
+  },
+  "formatAccount": {
+    "message": "アカウント",
+    "description": "Format option for account name"
+  },
+  "formatTweetId": {
+    "message": "ツイートID",
+    "description": "Format option for tweet ID"
+  },
+  "formatTweetTime": {
+    "message": "ツイート時間",
+    "description": "Format option for tweet time"
+  },
+  "formatDownloadDate": {
+    "message": "ダウンロード日時",
+    "description": "Format option for download date"
+  },
+  "formatAuthorName": {
+    "message": "作者名",
+    "description": "Format option for author name"
+  },
+  "formatAuthorId": {
+    "message": "作者ID",
+    "description": "Format option for author ID"
+  },
+  "formatIllustId": {
+    "message": "イラストID",
+    "description": "Format option for illustration ID"
+  },
+  "exampleTwitterImage": {
+    "message": "Twitter画像例",
+    "description": "Example title for Twitter images"
+  },
+  "exampleTwitterVideo": {
+    "message": "Twitter動画例",
+    "description": "Example title for Twitter videos"
+  },
+  "examplePixiv": {
+    "message": "Pixivファイル名例",
+    "description": "Example title for Pixiv files"
+  },
+  "saveButton": {
+    "message": "設定を保存",
+    "description": "Save button text"
+  },
+  "saveSuccess": {
+    "message": "正常に保存されました！",
+    "description": "Success message"
+  },
+  "settingsUpdated": {
+    "message": "設定を更新しました",
+    "description": "Settings updated message"
+  },
+  "tabSettings": {
+    "message": "設定",
+    "description": "Settings tab label"
+  },
+  "tabLogs": {
+    "message": "ログ",
+    "description": "Logs tab label"
+  },
+  "notificationLabel": {
+    "message": "通知",
+    "description": "Label for notification switch"
+  },
+  "errorLogTitle": {
+    "message": "エラーログ",
+    "description": "Title for error logs section"
+  },
+  "logFilterAll": {
+    "message": "すべてのプラットフォーム",
+    "description": "Log filter option for all platforms"
+  },
+  "clearLogs": {
+    "message": "ログを消去",
+    "description": "Clear logs button text"
+  },
+  "exportLogs": {
+    "message": "ログをエクスポート",
+    "description": "Export logs button text"
+  },
+  "noLogs": {
+    "message": "エラーログはありません",
+    "description": "Empty state text when no error logs"
+  },
+  "noLogsToExport": {
+    "message": "エクスポートするログはありません",
+    "description": "Alert message when there are no logs to export"
+  }
+}

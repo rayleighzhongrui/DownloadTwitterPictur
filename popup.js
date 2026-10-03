@@ -6,35 +6,151 @@ const DEFAULT_PIXIV_FORMATS = ['authorName', 'illustId'];
 // 简化版 state - 移除代理相关字段
 const state = {};
 
+// 根据浏览器语言映射 locale（与网站使用的相同）
+function getLocale() {
+  const browserLang = navigator.language || navigator.userLanguage;
+  if (browserLang.startsWith('ja')) {
+    return 'ja';
+  } else if (browserLang === 'zh-TW' || browserLang.startsWith('zh-Hant')) {
+    return 'zh-TW';
+  } else if (browserLang.startsWith('zh')) {
+    return 'zh-CN';
+  } else if (browserLang.startsWith('de')) {
+    return 'de';
+  } else if (browserLang.startsWith('ko')) {
+    return 'ko';
+  } else if (browserLang.startsWith('ru')) {
+    return 'ru';
+  } else if (browserLang.startsWith('cs')) {
+    return 'cs';
+  }
+  return 'en';
+}
+
+// 当前已加载的翻译，供动态生成的元素使用
+let currentTranslations = {};
+
+// 取指定 key 的翻译文案
+function t(key) {
+  const entry = currentTranslations[key];
+  return entry ? entry.message : '';
+}
+
+// 国际化函数：替换所有带有data-i18n属性的元素
+async function applyI18n() {
+  const elements = document.querySelectorAll('[data-i18n]');
+
+  // 加载对应语言的翻译文件，失败时回退到英文
+  try {
+    const response = await fetch(`_locales/${getLocale()}/messages.json`);
+    currentTranslations = await response.json();
+  } catch (error) {
+    const response = await fetch('_locales/en/messages.json');
+    currentTranslations = await response.json();
+  }
+
+  // 应用翻译
+  elements.forEach(element => {
+    const message = element.getAttribute('data-i18n');
+    if (currentTranslations[message]) {
+      element.textContent = currentTranslations[message].message;
+    }
+  });
+
+  // 更新页面标题
+  const titleElement = document.querySelector('title[data-i18n]');
+  if (titleElement) {
+    const message = titleElement.getAttribute('data-i18n');
+    if (currentTranslations[message]) {
+      document.title = currentTranslations[message].message;
+    }
+  }
+}
+
+// 各语言的示例文件名片段
+const EXAMPLE_TEXTS = {
+  'en': {
+    'account': 'exampleUser_',
+    'tweetId': '88669977_',
+    'tweetTime': '20230810_',
+    'authorName': 'exampleAuthor_',
+    'authorId': '12345_',
+    'illustId': '88669977_',
+    'downloadDate': '20230811_'
+  },
+  'ja': {
+    'account': 'サンプルユーザー_',
+    'tweetId': '88669977_',
+    'tweetTime': '20230810_',
+    'authorName': 'サンプル作者_',
+    'authorId': '12345_',
+    'illustId': '88669977_',
+    'downloadDate': '20230811_'
+  },
+  'zh-CN': {
+    'account': '示例用户_',
+    'tweetId': '88669977_',
+    'tweetTime': '20230810_',
+    'authorName': '示例作者_',
+    'authorId': '12345_',
+    'illustId': '88669977_',
+    'downloadDate': '20230811_'
+  },
+  'de': {
+    'account': 'BeispielBenutzer_',
+    'tweetId': '88669977_',
+    'tweetTime': '20230810_',
+    'authorName': 'BeispielAutor_',
+    'authorId': '12345_',
+    'illustId': '88669977_',
+    'downloadDate': '20230811_'
+  },
+  'ko': {
+    'account': '예시사용자_',
+    'tweetId': '88669977_',
+    'tweetTime': '20230810_',
+    'authorName': '예시작가_',
+    'authorId': '12345_',
+    'illustId': '88669977_',
+    'downloadDate': '20230811_'
+  },
+  'ru': {
+    'account': 'ПримерПользователя_',
+    'tweetId': '88669977_',
+    'tweetTime': '20230810_',
+    'authorName': 'ПримерАвтора_',
+    'authorId': '12345_',
+    'illustId': '88669977_',
+    'downloadDate': '20230811_'
+  },
+  'cs': {
+    'account': 'PříkladUživatel_',
+    'tweetId': '88669977_',
+    'tweetTime': '20230810_',
+    'authorName': 'PříkladAutor_',
+    'authorId': '12345_',
+    'illustId': '88669977_',
+    'downloadDate': '20230811_'
+  },
+  'zh-TW': {
+    'account': '範例使用者_',
+    'tweetId': '88669977_',
+    'tweetTime': '20230810_',
+    'authorName': '範例作者_',
+    'authorId': '12345_',
+    'illustId': '88669977_',
+    'downloadDate': '20230811_'
+  }
+};
+
 function updateExample(containerId, exampleId) {
   const formats = getSelectedFormats(containerId);
+  const texts = EXAMPLE_TEXTS[getLocale()] || EXAMPLE_TEXTS['en'];
   let exampleText = '';
 
   formats.forEach(format => {
-    switch (format) {
-      case 'account':
-        exampleText += 'rayleighzhong_';
-        break;
-      case 'tweetId':
-        exampleText += '88669977_';
-        break;
-      case 'tweetTime':
-        exampleText += '20230810_';
-        break;
-      case 'authorName':
-        exampleText += '萩森じあ_';
-        break;
-      case 'authorId':
-        exampleText += '12345_';
-        break;
-      case 'illustId':
-        exampleText += '88669977_';
-        break;
-      case 'downloadDate':
-        exampleText += '20230811_';
-        break;
-      default:
-        break;
+    if (texts[format]) {
+      exampleText += texts[format];
     }
   });
 
@@ -50,9 +166,10 @@ function updateExample(containerId, exampleId) {
 function toggleSelection(containerId, exampleId, videoExampleId = null) {
   const container = document.getElementById(containerId);
   container.addEventListener('click', event => {
-    const target = event.target;
-    if (target.classList.contains('format-option')) {
-      target.classList.toggle('selected');
+    // 文字被 span 包裹（用于 i18n），需要向上找到 format-option
+    const option = event.target.closest('.format-option');
+    if (option) {
+      option.classList.toggle('selected');
       updateExample(containerId, exampleId);
       if (videoExampleId) {
         updateExample(containerId, videoExampleId);
@@ -122,7 +239,7 @@ async function loadLogs() {
   logList.innerHTML = '';
 
   if (filteredLogs.length === 0) {
-    logList.innerHTML = '<div class="empty-state">暂无错误日志</div>';
+    logList.innerHTML = `<div class="empty-state">${t('noLogs') || '暂无错误日志'}</div>`;
     return;
   }
 
@@ -145,7 +262,7 @@ async function loadLogs() {
 async function exportLogs() {
   const { errorLogs = [] } = await Storage.getLocal('errorLogs');
   if (errorLogs.length === 0) {
-    alert('暂无日志可导出');
+    alert(t('noLogsToExport') || '暂无日志可导出');
     return;
   }
 
@@ -187,6 +304,9 @@ document.getElementById('exportLogs').addEventListener('click', exportLogs);
 
 // 初始化
 async function init() {
+  // 先应用国际化，再渲染示例和日志
+  await applyI18n();
+
   const result = await Storage.getSync([
     'twitterFilenameFormat',
     'pixivFilenameFormat',
@@ -203,6 +323,10 @@ async function init() {
 
   initSelection('twitterFormat', twitterFormats);
   initSelection('pixivFormat', pixivFormats);
+
+  // 绑定格式选项点击（重构时丢失，此处恢复）
+  toggleSelection('twitterFormat', 'twitterExample', 'twitterVideoExample');
+  toggleSelection('pixivFormat', 'pixivExample');
 
   document.getElementById('twitterSwitch').checked = twitterSwitch;
   document.getElementById('pixivSwitch').checked = pixivSwitch;
