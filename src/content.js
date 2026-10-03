@@ -1,6 +1,7 @@
 import { ConfigManager } from './core/config.js';
 import { Downloader } from './core/downloader.js';
 import { RetryManager } from './utils/retry.js';
+import { ProxyManager } from './core/proxy-manager.js';
 import { TwitterPlatform } from './platforms/twitter/twitter-platform.js';
 import { PixivPlatform } from './platforms/pixiv/pixiv-platform.js';
 
@@ -10,6 +11,7 @@ class ContentScript {
     this.config = new ConfigManager();
     this.downloader = new Downloader();
     this.retryManager = new RetryManager();
+    this.proxyManager = new ProxyManager();
     this.handleClick = this.handleClick.bind(this);
   }
 
@@ -48,7 +50,8 @@ class ContentScript {
       if (!this.platforms.has('pixiv')) {
         this.platforms.set('pixiv', new PixivPlatform({
           downloader: this.downloader,
-          retryManager: this.retryManager
+          retryManager: this.retryManager,
+          proxyManager: this.proxyManager
         }));
       }
     } else {

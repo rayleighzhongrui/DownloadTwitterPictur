@@ -6,7 +6,9 @@ export class ProxyManager {
   constructor() {
     // 硬编码代理域名 - 请替换为你自己的 Cloudflare 反代域名
     // 格式示例: pixiv.example.com
-    this.proxyDomain = 'YOUR_PROXY_DOMAIN_HERE';
+    // 本地开发：填入你自己的反代
+    // 应用商店发布：临时改回 'YOUR_PROXY_DOMAIN_HERE'，让用户自行配置
+    this.proxyDomain = 'pixiv.zhongrui.app';
   }
 
   async load() {

@@ -1,37 +1,86 @@
 import { pixivCache } from '../../utils/pixiv-dom-cache.js';
 
+// Pixiv 收藏按钮可能使用的标识：aria-label / title / data 属性 / class 关键字
+const BOOKMARK_HINTS = [
+  // 日文
+  'ブックマークに追加',
+  'ブックマーク済み',
+  'ブックマーク解除',
+  // 中文
+  '收藏',
+  '已收藏',
+  '取消收藏',
+  '添加收藏',
+  // 英文
+  'bookmark',
+  'Bookmark',
+  'add bookmark',
+  'remove bookmark',
+  'Add to bookmarks'
+];
+
+function matchesBookmarkHint(text) {
+  if (!text) return false;
+  const lower = String(text).toLowerCase();
+  return BOOKMARK_HINTS.some(hint => lower.includes(hint.toLowerCase()));
+}
+
+function isBookmarkElement(el) {
+  if (!el || el.nodeType !== 1) return false;
+  if (matchesBookmarkHint(el.getAttribute?.('aria-label'))) return true;
+  if (matchesBookmarkHint(el.getAttribute?.('title'))) return true;
+  if (matchesBookmarkHint(el.getAttribute?.('data-ga4-label'))) return true;
+  const cls = el.className && typeof el.className === 'string' ? el.className : '';
+  if (/bookmark/i.test(cls)) return true;
+  return false;
+}
+
 export function findPixivBookmarkButton(target) {
-  let button = target.closest('[class*="bookmark"]');
-  if (button) return button;
-
-  button = target.closest('[data-ga4-label="bookmark_button"]');
-  if (button) return button;
-
-  button = target.closest('button');
-  if (button && isLikelyBookmarkButton(button)) {
-    return button;
+  // 1. 自身或祖先节点带 bookmark 提示
+  let el = target;
+  while (el && el !== document.body) {
+    if (isBookmarkElement(el)) {
+      // 找到 button/role=button；如果不是交互元素，找其内层按钮
+      if (el.tagName === 'BUTTON' || el.getAttribute?.('role') === 'button') return el;
+      const inner = el.querySelector?.('button, [role="button"]');
+      if (inner && isBookmarkElement(inner)) return inner;
+      // 祖先本身就被识别为 bookmark 区域时返回它（platform 会找最近的 artwork 链接）
+      return el;
+    }
+    el = el.parentElement;
   }
+
+  // 2. 旧选择器兜底（早期 Pixiv 版本）
+  let button = target.closest('[data-ga4-label="bookmark_button"]');
+  if (button) return button;
+
+  // 3. 启发式：最近的 button 且不是 follow
+  button = target.closest('button');
+  if (button && isLikelyBookmarkButton(button)) return button;
 
   return null;
 }
 
 function isLikelyBookmarkButton(button) {
-  const container = button.closest('li, [class*="sc-"], div');
-  if (!container) return false;
-
-  const hasImage = container.querySelector('img');
-  const hasArtworkLink = container.querySelector('a[href*="/artworks/"], a[href*="/users/"]');
-  const hasIcon = button.querySelector('svg, img');
+  // 排除明显的“关注”按钮
   const buttonText = button.textContent.trim();
   const isFollowButton = buttonText.includes('关注') || buttonText.includes('フォロー') || buttonText.includes('follow');
-
-  return hasImage && hasArtworkLink && hasIcon && !isFollowButton;
+  if (isFollowButton) return false;
+  // 必须有 svg 图标
+  if (!button.querySelector('svg')) return false;
+  return true;
 }
 
 export function findArtworkContainer(bookmarkButton) {
   const cached = pixivCache.getContainer(bookmarkButton);
   if (cached) {
     return cached;
+  }
+
+  // 详情页场景：整个 document.body 都是作品的渲染容器，
+  // 直接返回 document.body 让 platform 用 URL 路径提取 illustId。
+  if (window.location.pathname.startsWith('/artworks/')) {
+    return document.body;
   }
 
   let container;

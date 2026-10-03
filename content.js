@@ -141,27 +141,60 @@
     }
   };
 
+  // src/core/proxy-manager.js
+  var ProxyManager = class {
+    constructor() {
+      this.proxyDomain = "pixiv.zhongrui.app";
+    }
+    async load() {
+      return Promise.resolve();
+    }
+    /**
+     * 获取代理域名
+     * @returns {string} 代理域名
+     */
+    getProxyDomain() {
+      return this.proxyDomain;
+    }
+  };
+
   // src/utils/error-logger.js
   var LOG_KEY = "errorLogs";
   var MAX_LOGS = 100;
+  var Mutex = class {
+    constructor() {
+      this.tail = Promise.resolve();
+    }
+    run(fn) {
+      const next = this.tail.then(fn, fn);
+      this.tail = next.catch(() => {
+      });
+      return next;
+    }
+  };
+  var mutex = new Mutex();
   var ErrorLogger = class {
     static async log(entry) {
-      const { errorLogs = [] } = await Storage.getLocal(LOG_KEY);
-      const next = [
-        {
-          timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-          ...entry
-        },
-        ...errorLogs
-      ].slice(0, MAX_LOGS);
-      await Storage.setLocal({ [LOG_KEY]: next });
+      return mutex.run(async () => {
+        const { errorLogs = [] } = await Storage.getLocal(LOG_KEY);
+        const next = [
+          {
+            timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+            ...entry
+          },
+          ...errorLogs
+        ].slice(0, MAX_LOGS);
+        await Storage.setLocal({ [LOG_KEY]: next });
+      });
     }
     static async getLogs() {
       const { errorLogs = [] } = await Storage.getLocal(LOG_KEY);
       return errorLogs;
     }
     static async clear() {
-      await Storage.setLocal({ [LOG_KEY]: [] });
+      return mutex.run(async () => {
+        await Storage.setLocal({ [LOG_KEY]: [] });
+      });
     }
   };
 
@@ -553,94 +586,9 @@
         const videoUrl = await fetchVideoUrlFromTwitterAPI(metadata.tweetId);
         if (videoUrl) {
           await this.downloadVideo(videoUrl, { resolution, ...metadata });
-          return;
         }
       } catch (error) {
-        console.log("Twitter API\u65B9\u6CD5\u5931\u8D25:", error.message);
-      }
-      const resources = performance.getEntriesByType("resource");
-      for (const resource of resources) {
-        if (resource.name.includes("video.twimg.com") && resource.name.includes("amplify_video") && resource.name.includes(videoId) && resource.name.includes(".mp4") && !resource.name.includes(".m4s")) {
-          await this.downloadVideo(resource.name, { resolution, ...metadata });
-          return;
-        }
-      }
-      this.setupNetworkListener(videoId, resolution, metadata);
-    }
-    setupNetworkListener(videoId, resolution, metadata) {
-      let captured = false;
-      const timeout = 5e3;
-      const originalFetch = window.fetch;
-      window.fetch = (...args) => {
-        const url = args[0];
-        if (typeof url === "string" && url.includes("video.twimg.com") && url.includes(videoId)) {
-          if (url.includes(".m3u8") && !captured) {
-            originalFetch.call(window, url).then((response) => response.text()).then((content) => {
-              if (captured)
-                return;
-              const lines = content.split("\n");
-              for (let i = 0; i < lines.length; i += 1) {
-                const line = lines[i].trim();
-                if (line.includes("RESOLUTION")) {
-                  const resMatch = line.match(/RESOLUTION=(\d+x\d+)/);
-                  const nextLine = lines[i + 1]?.trim();
-                  if (resMatch && nextLine && nextLine.includes("avc1")) {
-                    const subUrl = nextLine.startsWith("http") ? nextLine : `https://video.twimg.com${nextLine}`;
-                    originalFetch.call(window, subUrl).then((r) => r.text()).then((subContent) => {
-                      if (captured)
-                        return;
-                      const subLines = subContent.split("\n");
-                      for (const subLine of subLines) {
-                        if (subLine.includes("#EXT-X-MAP")) {
-                          const uriMatch = subLine.match(/URI="([^"]+)"/);
-                          if (uriMatch) {
-                            captured = true;
-                            window.fetch = originalFetch;
-                            const mp4Url = uriMatch[1].startsWith("http") ? uriMatch[1] : `https://video.twimg.com${uriMatch[1]}`;
-                            this.downloadVideo(mp4Url, { resolution: resMatch[1], ...metadata }).catch((error) => this.handleError(error, { action: "downloadVideo", url: mp4Url }));
-                            return;
-                          }
-                        }
-                      }
-                    }).catch(() => {
-                    });
-                    break;
-                  }
-                }
-              }
-            }).catch(() => {
-            });
-          }
-          if (url.includes(".mp4") && url.includes("/vid/") && !url.includes(".m4s") && !captured) {
-            captured = true;
-            window.fetch = originalFetch;
-            this.downloadVideo(url, { resolution, ...metadata }).catch((error) => this.handleError(error, { action: "downloadVideo", url }));
-          }
-        }
-        return originalFetch.apply(window, args);
-      };
-      setTimeout(() => {
-        if (!captured) {
-          window.fetch = originalFetch;
-          this.tryFetchTweetPage(videoId, resolution, metadata);
-        }
-      }, timeout);
-    }
-    async tryFetchTweetPage(videoId, resolution, metadata) {
-      try {
-        const scripts = document.querySelectorAll("script");
-        for (const script of scripts) {
-          const text = script.textContent;
-          if (text && text.includes("video_url") && text.includes(videoId)) {
-            const matches = text.match(new RegExp(`https://video\\.twimg\\.com/amplify_video/${videoId}/[^"]+\\.mp4`, "g"));
-            if (matches && matches.length > 0) {
-              await this.downloadVideo(matches[0], { resolution, ...metadata });
-              return;
-            }
-          }
-        }
-      } catch (error) {
-        console.log("\u4ECE\u9875\u9762\u83B7\u53D6\u89C6\u9891\u4FE1\u606F\u5931\u8D25:", error.message);
+        console.log("Twitter API \u65B9\u6CD5\u5931\u8D25:", error.message);
       }
     }
   };
@@ -731,34 +679,80 @@
   var pixivCache = new PixivDOMCache();
 
   // src/platforms/pixiv/pixiv-detector.js
+  var BOOKMARK_HINTS = [
+    // 日文
+    "\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u306B\u8FFD\u52A0",
+    "\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u6E08\u307F",
+    "\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u89E3\u9664",
+    // 中文
+    "\u6536\u85CF",
+    "\u5DF2\u6536\u85CF",
+    "\u53D6\u6D88\u6536\u85CF",
+    "\u6DFB\u52A0\u6536\u85CF",
+    // 英文
+    "bookmark",
+    "Bookmark",
+    "add bookmark",
+    "remove bookmark",
+    "Add to bookmarks"
+  ];
+  function matchesBookmarkHint(text) {
+    if (!text)
+      return false;
+    const lower = String(text).toLowerCase();
+    return BOOKMARK_HINTS.some((hint) => lower.includes(hint.toLowerCase()));
+  }
+  function isBookmarkElement(el) {
+    if (!el || el.nodeType !== 1)
+      return false;
+    if (matchesBookmarkHint(el.getAttribute?.("aria-label")))
+      return true;
+    if (matchesBookmarkHint(el.getAttribute?.("title")))
+      return true;
+    if (matchesBookmarkHint(el.getAttribute?.("data-ga4-label")))
+      return true;
+    const cls = el.className && typeof el.className === "string" ? el.className : "";
+    if (/bookmark/i.test(cls))
+      return true;
+    return false;
+  }
   function findPixivBookmarkButton(target) {
-    let button = target.closest('[class*="bookmark"]');
-    if (button)
-      return button;
-    button = target.closest('[data-ga4-label="bookmark_button"]');
+    let el = target;
+    while (el && el !== document.body) {
+      if (isBookmarkElement(el)) {
+        if (el.tagName === "BUTTON" || el.getAttribute?.("role") === "button")
+          return el;
+        const inner = el.querySelector?.('button, [role="button"]');
+        if (inner && isBookmarkElement(inner))
+          return inner;
+        return el;
+      }
+      el = el.parentElement;
+    }
+    let button = target.closest('[data-ga4-label="bookmark_button"]');
     if (button)
       return button;
     button = target.closest("button");
-    if (button && isLikelyBookmarkButton(button)) {
+    if (button && isLikelyBookmarkButton(button))
       return button;
-    }
     return null;
   }
   function isLikelyBookmarkButton(button) {
-    const container = button.closest('li, [class*="sc-"], div');
-    if (!container)
-      return false;
-    const hasImage = container.querySelector("img");
-    const hasArtworkLink = container.querySelector('a[href*="/artworks/"], a[href*="/users/"]');
-    const hasIcon = button.querySelector("svg, img");
     const buttonText = button.textContent.trim();
     const isFollowButton = buttonText.includes("\u5173\u6CE8") || buttonText.includes("\u30D5\u30A9\u30ED\u30FC") || buttonText.includes("follow");
-    return hasImage && hasArtworkLink && hasIcon && !isFollowButton;
+    if (isFollowButton)
+      return false;
+    if (!button.querySelector("svg"))
+      return false;
+    return true;
   }
   function findArtworkContainer(bookmarkButton) {
     const cached = pixivCache.getContainer(bookmarkButton);
     if (cached) {
       return cached;
+    }
+    if (window.location.pathname.startsWith("/artworks/")) {
+      return document.body;
     }
     let container;
     if (isRecommendationFeed(bookmarkButton)) {
@@ -866,200 +860,177 @@
   }
 
   // src/platforms/pixiv/pixiv-api.js
-  function buildOriginalImageUrl(imgSrc, proxyDomain, illustId) {
-    const standard = imgSrc.match(/img\/(\d{4})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d+)_/);
-    if (standard) {
-      const [, year, month, day, hour, minute, second, matchedIllustId] = standard;
-      const finalIllustId = illustId && illustId !== "unknown_id" ? illustId : matchedIllustId;
-      return {
-        illustId: finalIllustId,
-        url: `https://${proxyDomain}/img-original/img/${year}/${month}/${day}/${hour}/${minute}/${second}/${finalIllustId}_p0.png`
-      };
+  var META_URL = (id) => `https://www.pixiv.net/ajax/illust/${id}`;
+  var PAGES_URL = (id) => `https://www.pixiv.net/ajax/illust/${id}/pages`;
+  function asJson(response) {
+    if (!response.ok) {
+      const err = new Error(`HTTP ${response.status}`);
+      err.status = response.status;
+      throw err;
     }
-    const simple = imgSrc.match(/img\/(\d{4})\/(\d{2})\/(\d{2})\/(\d+)_/);
-    if (simple) {
-      const [, year, month, day, matchedIllustId] = simple;
-      const finalIllustId = illustId && illustId !== "unknown_id" ? illustId : matchedIllustId;
-      return {
-        illustId: finalIllustId,
-        url: `https://${proxyDomain}/img-original/img/${year}/${month}/${day}/00/00/00/${finalIllustId}_p0.png`
-      };
+    return response.json();
+  }
+  async function fetchAjaxBody(url, label) {
+    const data = await asJson(await fetch(url));
+    if (!data || data.error) {
+      throw new Error(data?.message || `${label} \u8FD4\u56DE\u9519\u8BEF`);
+    }
+    return data.body;
+  }
+  async function fetchIllustMeta(illustId) {
+    const body = await fetchAjaxBody(META_URL(illustId), `illust/${illustId}`);
+    if (!body || !body.illustId) {
+      throw new Error(`illust/${illustId} \u54CD\u5E94\u7F3A\u5C11 body`);
+    }
+    return {
+      illustId: body.illustId,
+      illustTitle: body.illustTitle || "",
+      userId: body.userId,
+      userName: body.userName,
+      pageCount: body.pageCount,
+      // 单图作品 body.urls.original 直接就是原图
+      originalUrl: body.urls?.original || null,
+      tags: Array.isArray(body.tags?.tags) ? body.tags.tags.map((t) => t.tag) : []
+    };
+  }
+  async function fetchIllustPages(illustId) {
+    const body = await fetchAjaxBody(PAGES_URL(illustId), `illust/${illustId}/pages`);
+    if (!Array.isArray(body)) {
+      throw new Error(`illust/${illustId}/pages \u8FD4\u56DE\u7ED3\u6784\u5F02\u5E38`);
+    }
+    return body.map((p) => ({
+      width: p.width,
+      height: p.height,
+      urls: p.urls || {}
+    }));
+  }
+
+  // src/platforms/pixiv/pixiv-platform.js
+  var ILLUST_ID_RE = /\/artworks\/(\d+)/;
+  var DEBUG = true;
+  function extractIllustId(target, metadata) {
+    const fromLink = metadata?.links?.[0]?.href.match(ILLUST_ID_RE)?.[1];
+    if (fromLink)
+      return fromLink;
+    const fromTarget = target?.href?.match(ILLUST_ID_RE)?.[1];
+    if (fromTarget)
+      return fromTarget;
+    const fromUrl = window.location.pathname.match(ILLUST_ID_RE)?.[1];
+    if (fromUrl)
+      return fromUrl;
+    const anyLink = document.querySelector("a[href*=\u201D/artworks/\u201D]");
+    if (anyLink) {
+      const m = anyLink.href.match(ILLUST_ID_RE);
+      if (m)
+        return m[1];
     }
     return null;
   }
-
-  // src/core/proxy-manager.js
-  var ProxyManager = class {
-    constructor() {
-      this.proxyDomain = "YOUR_PROXY_DOMAIN_HERE";
-    }
-    async load() {
-      return Promise.resolve();
-    }
-    /**
-     * 获取代理域名
-     * @returns {string} 代理域名
-     */
-    getProxyDomain() {
-      return this.proxyDomain;
-    }
-  };
-
-  // src/platforms/pixiv/pixiv-platform.js
   var PixivPlatform = class extends BasePlatform {
-    constructor({ downloader, retryManager }) {
+    constructor({ downloader, retryManager, proxyManager }) {
       super({ name: "pixiv", downloader, retryManager });
-      this.proxyManager = new ProxyManager();
+      this.proxyManager = proxyManager || new ProxyManager();
     }
     detectAction(event) {
       return Boolean(findPixivBookmarkButton(event.target));
     }
     async handleAction(event) {
       const bookmarkButton = findPixivBookmarkButton(event.target);
-      if (!bookmarkButton)
+      if (!bookmarkButton) {
+        if (DEBUG)
+          console.log("[Pixiv] detector miss", {
+            target: event.target,
+            targetTag: event.target?.tagName,
+            targetAria: event.target?.getAttribute?.("aria-label"),
+            targetClass: event.target?.className
+          });
         return false;
+      }
+      if (DEBUG)
+        console.log("[Pixiv] handleAction start", bookmarkButton);
       await this.proxyManager.load();
-      const artworkContainer = findArtworkContainer(bookmarkButton);
-      const metadata = artworkContainer ? pixivCache.getContainerMetadata(artworkContainer) : null;
-      const url = window.location.href;
-      let illustId;
-      let authorId = "unknown_author";
-      let authorName = "unknown_author_name";
-      let images = [];
-      let totalImages = 1;
-      if (url.startsWith("https://www.pixiv.net/artworks/")) {
-        illustId = url.match(/artworks\/(\d+)/)?.[1] || "unknown_id";
-        const authorLinkElement = metadata?.userLinks?.[0] || document.querySelector('a[href*="/users/"]');
-        if (authorLinkElement) {
-          authorId = authorLinkElement.href.match(/users\/(\d+)/)?.[1] || "unknown_author";
-          authorName = authorLinkElement.textContent.trim();
-          if (!authorName || authorName.includes("\u67E5\u770B") || authorName.includes("\u66F4\u591A") || authorName.length > 50) {
-            const authorImg = authorLinkElement.querySelector("img");
-            if (authorImg && authorImg.alt && !authorImg.alt.includes("\u7684\u63D2\u753B")) {
-              authorName = authorImg.alt.trim();
-            }
-          }
-        }
-        if (metadata?.images?.length) {
-          images = metadata.images;
-        } else {
-          const mainImage = document.querySelector("main img");
-          if (mainImage) {
-            images = [mainImage];
-          }
-        }
-        const pageIndicator = document.querySelector("[data-gtm-value]");
-        if (pageIndicator) {
-          const match = pageIndicator.textContent.match(/(\d+)\/(\d+)/);
-          if (match)
-            totalImages = parseInt(match[2], 10);
-        }
-      } else if (artworkContainer) {
-        const artworkLinks = metadata?.links?.length ? metadata.links : Array.from(artworkContainer.querySelectorAll('a[href*="/artworks/"]'));
-        let mainArtworkLink = null;
-        if (artworkLinks.length > 1) {
-          mainArtworkLink = Array.from(artworkLinks).reduce((largest, current) => {
-            const largestRect = largest.getBoundingClientRect();
-            const currentRect = current.getBoundingClientRect();
-            return currentRect.width * currentRect.height > largestRect.width * largestRect.height ? current : largest;
-          });
-        } else {
-          mainArtworkLink = artworkLinks[0];
-        }
-        if (mainArtworkLink) {
-          illustId = mainArtworkLink.href.match(/artworks\/(\d+)/)?.[1];
-        } else {
-          illustId = artworkContainer.querySelector("[data-gtm-value]")?.getAttribute("data-gtm-value");
-        }
-        const authorLink = metadata?.userLinks?.[0] || artworkContainer.querySelector('a[href*="/users/"]');
-        if (authorLink) {
-          authorId = authorLink.href.match(/users\/(\d+)/)?.[1] || "unknown_author";
-          authorName = authorLink.textContent.trim();
-          if (!authorName || authorName.includes("\u67E5\u770B") || authorName.includes("\u66F4\u591A") || authorName.length > 50) {
-            const authorImg = authorLink.querySelector("img");
-            if (authorImg && authorImg.alt && !authorImg.alt.includes("\u7684\u63D2\u753B")) {
-              authorName = authorImg.alt.trim();
-            }
-          }
-        }
-        const allImages = metadata?.images?.length ? metadata.images : Array.from(artworkContainer.querySelectorAll("img"));
-        let mainImage = null;
-        if (allImages.length > 1) {
-          const largeImages = allImages.filter((img) => {
-            const rect = img.getBoundingClientRect();
-            return rect.width > 80 && rect.height > 80;
-          });
-          if (largeImages.length > 0) {
-            mainImage = largeImages.reduce((largest, current) => {
-              const largestRect = largest.getBoundingClientRect();
-              const currentRect = current.getBoundingClientRect();
-              return currentRect.width * currentRect.height > largestRect.width * largestRect.height ? current : largest;
-            });
-          }
-        } else {
-          mainImage = allImages[0];
-        }
-        if (mainImage) {
-          images = [mainImage];
-          const multiImageIndicator = artworkContainer.querySelector('[class*="sc-"], span');
-          if (multiImageIndicator) {
-            const match = multiImageIndicator.textContent.match(/(\d+)/);
-            if (match && parseInt(match[1], 10) > 1) {
-              totalImages = parseInt(match[1], 10);
-            }
-          }
-        }
-      }
-      if (images.length === 0) {
+      const container = findArtworkContainer(bookmarkButton);
+      const metadata = container ? pixivCache.getContainerMetadata(container) : null;
+      const illustId = extractIllustId(bookmarkButton, metadata);
+      if (DEBUG)
+        console.log("[Pixiv] illustId =", illustId);
+      if (!illustId) {
+        await this.handleError(new Error("\u672A\u627E\u5230 illustId"), { action: "detectIllustId" });
         return false;
       }
-      for (const img of images) {
-        if (!img?.src)
-          continue;
-        const result = buildOriginalImageUrl(img.src, this.proxyManager.getProxyDomain(), illustId);
-        if (!result) {
-          continue;
+      let meta;
+      let pages;
+      try {
+        [meta, pages] = await Promise.all([
+          fetchIllustMeta(illustId),
+          fetchIllustPages(illustId).catch((err) => {
+            if (DEBUG)
+              console.log("[Pixiv] /pages failed, fallback to meta.originalUrl:", err.message);
+            return null;
+          })
+        ]);
+        if (!pages && meta?.originalUrl) {
+          pages = [{ urls: { original: meta.originalUrl } }];
         }
-        await this.downloadImageSeries(result.url, result.illustId, totalImages, {
-          authorId,
-          authorName,
-          illustId: result.illustId
-        });
+        if (DEBUG)
+          console.log("[Pixiv] api ok", { author: meta?.userName, pageCount: pages?.length });
+      } catch (error) {
+        if (DEBUG)
+          console.log("[Pixiv] api failed:", error.message, error);
+        await this.handleError(error, { action: "fetchIllustMeta", url: `illust/${illustId}` });
+        return false;
+      }
+      if (!pages || pages.length === 0) {
+        await this.handleError(new Error("\u4F5C\u54C1\u65E0\u53EF\u4E0B\u8F7D\u9875\u9762"), { action: "fetchIllustPages", url: `illust/${illustId}/pages` });
+        return false;
+      }
+      const fileMeta = {
+        authorId: String(meta.userId || "unknown_author"),
+        authorName: meta.userName || "unknown_author_name",
+        illustId: String(meta.illustId || illustId),
+        pageTotal: pages.length
+      };
+      for (let i = 0; i < pages.length; i += 1) {
+        const originalUrl = pages[i].urls?.original;
+        if (!originalUrl)
+          continue;
+        try {
+          await this.downloadWithFallback(originalUrl, {
+            ...fileMeta,
+            pageIndex: i + 1
+          });
+        } catch (error) {
+          await this.handleError(error, { action: "downloadImage", url: originalUrl });
+        }
       }
       return true;
+    }
+    // 图片下载走反代优先：i.pximg.net 有防盗链（校验 Referer），
+    // content script 里对它的 HEAD 请求是跨域 fetch，必然被 CORS 拦截。
+    // 反代（Cloudflare Worker）服务端带 Referer 转发并返回 CORS 头，是可靠路径。
+    // 反代失败时才回退原图直连（chrome.downloads 的下载不受 CORS 限制）。
+    async downloadWithFallback(originalUrl, metadata) {
+      const tried = /* @__PURE__ */ new Set();
+      const proxyDomain = this.proxyManager.getProxyDomain();
+      const candidates = proxyDomain && proxyDomain !== "YOUR_PROXY_DOMAIN_HERE" ? [this.replaceDomain(originalUrl, proxyDomain), originalUrl] : [originalUrl];
+      let lastError;
+      for (const url of candidates) {
+        if (tried.has(url))
+          continue;
+        tried.add(url);
+        try {
+          await this.downloadImage(url, metadata);
+          return;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      throw lastError || new Error("\u6240\u6709\u4E0B\u8F7D\u6E90\u5747\u5931\u8D25");
     }
     replaceDomain(url, domain) {
       const parsed = new URL(url);
       parsed.hostname = domain;
       return parsed.toString();
-    }
-    async downloadImageSeries(baseUrl, illustId, totalImages, metadata) {
-      for (let index = 0; index < totalImages; index += 1) {
-        const url = baseUrl.replace("_p0", `_p${index}`);
-        try {
-          await this.downloadWithProxies(url, {
-            ...metadata,
-            illustId
-          });
-        } catch (error) {
-          await this.handleError(error, {
-            action: "downloadImage",
-            url,
-            retryCount: this.retryManager?.maxRetries || 0
-          });
-        }
-        chrome.runtime.sendMessage({
-          action: "downloadProgress",
-          current: index + 1,
-          total: totalImages,
-          platform: "pixiv"
-        });
-      }
-    }
-    async downloadWithProxies(url, metadata) {
-      const proxyDomain = this.proxyManager.getProxyDomain();
-      const proxyUrl = this.replaceDomain(url, proxyDomain);
-      await this.downloadImage(proxyUrl, metadata);
     }
     async downloadImage(url, metadata) {
       const attemptDownload = async (imageUrl) => {
@@ -1078,27 +1049,19 @@
         await attemptDownload(url);
         return;
       }
-      try {
-        await this.retryManager.retry(() => attemptDownload(url), {
-          name: "Pixiv\u56FE\u7247\u4E0B\u8F7D",
-          onRetry: ({ attempt }) => {
-            if (attempt === 1) {
-              chrome.runtime.sendMessage({
-                action: "notify",
-                level: "warning",
-                title: "\u4E0B\u8F7D\u91CD\u8BD5\u4E2D",
-                message: "Pixiv\u56FE\u7247\u6B63\u5728\u91CD\u8BD5..."
-              });
-            }
+      await this.retryManager.retry(() => attemptDownload(url), {
+        name: "Pixiv\u56FE\u7247\u4E0B\u8F7D",
+        onRetry: ({ attempt }) => {
+          if (attempt === 1) {
+            chrome.runtime.sendMessage({
+              action: "notify",
+              level: "warning",
+              title: "\u4E0B\u8F7D\u91CD\u8BD5\u4E2D",
+              message: "Pixiv\u56FE\u7247\u6B63\u5728\u91CD\u8BD5..."
+            });
           }
-        });
-      } catch (error) {
-        const retryUrl = url.endsWith(".png") ? url.replace(".png", ".jpg") : url.endsWith(".jpg") ? url.replace(".jpg", ".png") : null;
-        if (!retryUrl) {
-          throw error;
         }
-        await attemptDownload(retryUrl);
-      }
+      });
     }
   };
 
@@ -1109,6 +1072,7 @@
       this.config = new ConfigManager();
       this.downloader = new Downloader();
       this.retryManager = new RetryManager();
+      this.proxyManager = new ProxyManager();
       this.handleClick = this.handleClick.bind(this);
     }
     async init() {
@@ -1140,7 +1104,8 @@
         if (!this.platforms.has("pixiv")) {
           this.platforms.set("pixiv", new PixivPlatform({
             downloader: this.downloader,
-            retryManager: this.retryManager
+            retryManager: this.retryManager,
+            proxyManager: this.proxyManager
           }));
         }
       } else {

@@ -1,0 +1,39 @@
+{
+  "root": true,
+  "env": {
+    "es2022": true,
+    "browser": true,
+    "webextensions": true,
+    "node": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "extends": ["eslint:recommended"],
+  "rules": {
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "no-empty": ["error", { "allowEmptyCatch": true }],
+    "no-console": "off",
+    "prefer-const": "error",
+    "eqeqeq": ["error", "smart"],
+    "no-var": "error"
+  },
+  "ignorePatterns": [
+    "node_modules/",
+    "content.js",
+    "content.js.map",
+    "background.js",
+    "background.js.map",
+    "dist/"
+  ],
+  "overrides": [
+    {
+      "files": ["tests/**/*.js"],
+      "env": { "node": true, "browser": true },
+      "rules": {
+        "no-unused-vars": "off"
+      }
+    }
+  ]
+}

@@ -2,15 +2,14 @@
   "manifest_version": 3,
   "default_locale": "en",
   "name": "__MSG_extensionName__",
-  "version": "1.1",
+  "version": "1.2.0",
   "description": "__MSG_extensionDescription__",
   "icons": {
     "48": "images/icon.png"
   },
   "permissions": ["downloads", "declarativeNetRequest", "activeTab", "storage", "notifications"],
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
@@ -31,22 +30,12 @@
     "default_title": "__MSG_extensionName__"
   },
   "host_permissions": [
-    "https://*/*",
     "*://*.pixiv.net/*",
     "*://i.pximg.net/*",
+    "*://pbs.twimg.com/*",
+    "*://video.twimg.com/*",
+    "*://abs.twimg.com/*",
     "*://pixiv.zhongrui.app/*"
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "src/core/*.js",
-        "src/platforms/*.js",
-        "src/platforms/twitter/*.js",
-        "src/platforms/pixiv/*.js",
-        "src/utils/*.js"
-      ],
-      "matches": ["*://*.twitter.com/*", "*://*.x.com/*", "*://*.pixiv.net/*"]
-    }
   ],
   "declarative_net_request": {
     "rule_resources": [

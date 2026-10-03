@@ -1,13 +1,37 @@
 import { BasePlatform } from '../base-platform.js';
 import { findPixivBookmarkButton, findArtworkContainer } from './pixiv-detector.js';
-import { buildOriginalImageUrl } from './pixiv-api.js';
+import { fetchIllustMeta, fetchIllustPages } from './pixiv-api.js';
 import { ProxyManager } from '../../core/proxy-manager.js';
 import { pixivCache } from '../../utils/pixiv-dom-cache.js';
 
+const ILLUST_ID_RE = /\/artworks\/(\d+)/;
+const DEBUG = true; // 打开后会在控制台打印 handleAction 路径
+
+// 提取作品 ID：
+// 1. DOM 缓存里的 artwork 链接
+// 2. 当前页 URL 路径（详情页）
+// 3. 兜底扫描 document 全局的 artwork 链接（推荐流容器可能不含链接）
+function extractIllustId(target, metadata) {
+  const fromLink = metadata?.links?.[0]?.href.match(ILLUST_ID_RE)?.[1];
+  if (fromLink) return fromLink;
+  const fromTarget = target?.href?.match(ILLUST_ID_RE)?.[1];
+  if (fromTarget) return fromTarget;
+  const fromUrl = window.location.pathname.match(ILLUST_ID_RE)?.[1];
+  if (fromUrl) return fromUrl;
+  // 最后兜底：页面任意 artwork 链接
+  const anyLink = document.querySelector('a[href*=”/artworks/”]');
+  if (anyLink) {
+    const m = anyLink.href.match(ILLUST_ID_RE);
+    if (m) return m[1];
+  }
+  return null;
+}
+
 export class PixivPlatform extends BasePlatform {
-  constructor({ downloader, retryManager }) {
+  constructor({ downloader, retryManager, proxyManager }) {
     super({ name: 'pixiv', downloader, retryManager });
-    this.proxyManager = new ProxyManager();
+    // 允许外部注入，便于测试；否则按需实例化
+    this.proxyManager = proxyManager || new ProxyManager();
   }
 
   detectAction(event) {
@@ -16,175 +40,108 @@ export class PixivPlatform extends BasePlatform {
 
   async handleAction(event) {
     const bookmarkButton = findPixivBookmarkButton(event.target);
-    if (!bookmarkButton) return false;
-
-    await this.proxyManager.load();
-
-    const artworkContainer = findArtworkContainer(bookmarkButton);
-    const metadata = artworkContainer ? pixivCache.getContainerMetadata(artworkContainer) : null;
-
-    const url = window.location.href;
-    let illustId;
-    let authorId = 'unknown_author';
-    let authorName = 'unknown_author_name';
-    let images = [];
-    let totalImages = 1;
-
-    if (url.startsWith('https://www.pixiv.net/artworks/')) {
-      illustId = url.match(/artworks\/(\d+)/)?.[1] || 'unknown_id';
-
-      const authorLinkElement = metadata?.userLinks?.[0]
-        || document.querySelector('a[href*="/users/"]');
-      if (authorLinkElement) {
-        authorId = authorLinkElement.href.match(/users\/(\d+)/)?.[1] || 'unknown_author';
-        authorName = authorLinkElement.textContent.trim();
-        if (!authorName || authorName.includes('查看') || authorName.includes('更多') || authorName.length > 50) {
-          const authorImg = authorLinkElement.querySelector('img');
-          if (authorImg && authorImg.alt && !authorImg.alt.includes('的插画')) {
-            authorName = authorImg.alt.trim();
-          }
-        }
-      }
-
-      if (metadata?.images?.length) {
-        images = metadata.images;
-      } else {
-        const mainImage = document.querySelector('main img');
-        if (mainImage) {
-          images = [mainImage];
-        }
-      }
-
-      const pageIndicator = document.querySelector('[data-gtm-value]');
-      if (pageIndicator) {
-        const match = pageIndicator.textContent.match(/(\d+)\/(\d+)/);
-        if (match) totalImages = parseInt(match[2], 10);
-      }
-    } else if (artworkContainer) {
-      const artworkLinks = metadata?.links?.length
-        ? metadata.links
-        : Array.from(artworkContainer.querySelectorAll('a[href*="/artworks/"]'));
-        let mainArtworkLink = null;
-
-      if (artworkLinks.length > 1) {
-        mainArtworkLink = Array.from(artworkLinks).reduce((largest, current) => {
-            const largestRect = largest.getBoundingClientRect();
-            const currentRect = current.getBoundingClientRect();
-            return (currentRect.width * currentRect.height) > (largestRect.width * largestRect.height) ? current : largest;
-          });
-      } else {
-        mainArtworkLink = artworkLinks[0];
-      }
-
-      if (mainArtworkLink) {
-        illustId = mainArtworkLink.href.match(/artworks\/(\d+)/)?.[1];
-      } else {
-        illustId = artworkContainer.querySelector('[data-gtm-value]')?.getAttribute('data-gtm-value');
-      }
-
-      const authorLink = metadata?.userLinks?.[0]
-        || artworkContainer.querySelector('a[href*="/users/"]');
-      if (authorLink) {
-        authorId = authorLink.href.match(/users\/(\d+)/)?.[1] || 'unknown_author';
-        authorName = authorLink.textContent.trim();
-        if (!authorName || authorName.includes('查看') || authorName.includes('更多') || authorName.length > 50) {
-          const authorImg = authorLink.querySelector('img');
-          if (authorImg && authorImg.alt && !authorImg.alt.includes('的插画')) {
-            authorName = authorImg.alt.trim();
-          }
-        }
-      }
-
-      const allImages = metadata?.images?.length
-        ? metadata.images
-        : Array.from(artworkContainer.querySelectorAll('img'));
-      let mainImage = null;
-
-      if (allImages.length > 1) {
-        const largeImages = allImages.filter(img => {
-          const rect = img.getBoundingClientRect();
-          return rect.width > 80 && rect.height > 80;
-        });
-        if (largeImages.length > 0) {
-          mainImage = largeImages.reduce((largest, current) => {
-            const largestRect = largest.getBoundingClientRect();
-            const currentRect = current.getBoundingClientRect();
-            return (currentRect.width * currentRect.height) > (largestRect.width * largestRect.height) ? current : largest;
-          });
-        }
-      } else {
-        mainImage = allImages[0];
-      }
-
-      if (mainImage) {
-        images = [mainImage];
-        const multiImageIndicator = artworkContainer.querySelector('[class*="sc-"], span');
-        if (multiImageIndicator) {
-          const match = multiImageIndicator.textContent.match(/(\d+)/);
-          if (match && parseInt(match[1], 10) > 1) {
-            totalImages = parseInt(match[1], 10);
-          }
-        }
-      }
-    }
-
-    if (images.length === 0) {
+    if (!bookmarkButton) {
+      if (DEBUG) console.log('[Pixiv] detector miss', {
+        target: event.target,
+        targetTag: event.target?.tagName,
+        targetAria: event.target?.getAttribute?.('aria-label'),
+        targetClass: event.target?.className
+      });
       return false;
     }
 
-    for (const img of images) {
-      if (!img?.src) continue;
-      const result = buildOriginalImageUrl(img.src, this.proxyManager.getProxyDomain(), illustId);
-      if (!result) {
-        continue;
+    if (DEBUG) console.log('[Pixiv] handleAction start', bookmarkButton);
+
+    await this.proxyManager.load();
+
+    const container = findArtworkContainer(bookmarkButton);
+    const metadata = container ? pixivCache.getContainerMetadata(container) : null;
+
+    const illustId = extractIllustId(bookmarkButton, metadata);
+    if (DEBUG) console.log('[Pixiv] illustId =', illustId);
+    if (!illustId) {
+      await this.handleError(new Error('未找到 illustId'), { action: 'detectIllustId' });
+      return false;
+    }
+
+    let meta;
+    let pages;
+    try {
+      [meta, pages] = await Promise.all([
+        fetchIllustMeta(illustId),
+        fetchIllustPages(illustId).catch(err => {
+          if (DEBUG) console.log('[Pixiv] /pages failed, fallback to meta.originalUrl:', err.message);
+          return null;
+        })
+      ]);
+      // 单图兜底：/pages 挂了但 meta 里有原图 URL
+      if (!pages && meta?.originalUrl) {
+        pages = [{ urls: { original: meta.originalUrl } }];
       }
-      await this.downloadImageSeries(result.url, result.illustId, totalImages, {
-        authorId,
-        authorName,
-        illustId: result.illustId
-      });
+      if (DEBUG) console.log('[Pixiv] api ok', { author: meta?.userName, pageCount: pages?.length });
+    } catch (error) {
+      if (DEBUG) console.log('[Pixiv] api failed:', error.message, error);
+      await this.handleError(error, { action: 'fetchIllustMeta', url: `illust/${illustId}` });
+      return false;
+    }
+
+    if (!pages || pages.length === 0) {
+      await this.handleError(new Error('作品无可下载页面'), { action: 'fetchIllustPages', url: `illust/${illustId}/pages` });
+      return false;
+    }
+
+    const fileMeta = {
+      authorId: String(meta.userId || 'unknown_author'),
+      authorName: meta.userName || 'unknown_author_name',
+      illustId: String(meta.illustId || illustId),
+      pageTotal: pages.length
+    };
+
+    for (let i = 0; i < pages.length; i += 1) {
+      const originalUrl = pages[i].urls?.original;
+      if (!originalUrl) continue;
+      try {
+        await this.downloadWithFallback(originalUrl, {
+          ...fileMeta,
+          pageIndex: i + 1
+        });
+      } catch (error) {
+        await this.handleError(error, { action: 'downloadImage', url: originalUrl });
+      }
     }
 
     return true;
+  }
+
+  // 图片下载走反代优先：i.pximg.net 有防盗链（校验 Referer），
+  // content script 里对它的 HEAD 请求是跨域 fetch，必然被 CORS 拦截。
+  // 反代（Cloudflare Worker）服务端带 Referer 转发并返回 CORS 头，是可靠路径。
+  // 反代失败时才回退原图直连（chrome.downloads 的下载不受 CORS 限制）。
+  async downloadWithFallback(originalUrl, metadata) {
+    const tried = new Set();
+    const proxyDomain = this.proxyManager.getProxyDomain();
+    const candidates = proxyDomain && proxyDomain !== 'YOUR_PROXY_DOMAIN_HERE'
+      ? [this.replaceDomain(originalUrl, proxyDomain), originalUrl]
+      : [originalUrl];
+
+    let lastError;
+    for (const url of candidates) {
+      if (tried.has(url)) continue;
+      tried.add(url);
+      try {
+        await this.downloadImage(url, metadata);
+        return;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError || new Error('所有下载源均失败');
   }
 
   replaceDomain(url, domain) {
     const parsed = new URL(url);
     parsed.hostname = domain;
     return parsed.toString();
-  }
-
-  async downloadImageSeries(baseUrl, illustId, totalImages, metadata) {
-    for (let index = 0; index < totalImages; index += 1) {
-      const url = baseUrl.replace('_p0', `_p${index}`);
-      try {
-        await this.downloadWithProxies(url, {
-          ...metadata,
-          illustId
-        });
-      } catch (error) {
-        await this.handleError(error, {
-          action: 'downloadImage',
-          url,
-          retryCount: this.retryManager?.maxRetries || 0
-        });
-      }
-      chrome.runtime.sendMessage({
-        action: 'downloadProgress',
-        current: index + 1,
-        total: totalImages,
-        platform: 'pixiv'
-      });
-    }
-  }
-
-  async downloadWithProxies(url, metadata) {
-    // 直接使用硬编码的代理域名
-    const proxyDomain = this.proxyManager.getProxyDomain();
-    const proxyUrl = this.replaceDomain(url, proxyDomain);
-
-    // 使用重试管理器下载（保留重试功能）
-    await this.downloadImage(proxyUrl, metadata);
   }
 
   async downloadImage(url, metadata) {
@@ -206,30 +163,18 @@ export class PixivPlatform extends BasePlatform {
       return;
     }
 
-    try {
-      await this.retryManager.retry(() => attemptDownload(url), {
-        name: 'Pixiv图片下载',
-        onRetry: ({ attempt }) => {
-          if (attempt === 1) {
-            chrome.runtime.sendMessage({
-              action: 'notify',
-              level: 'warning',
-              title: '下载重试中',
-              message: 'Pixiv图片正在重试...'
-            });
-          }
+    await this.retryManager.retry(() => attemptDownload(url), {
+      name: 'Pixiv图片下载',
+      onRetry: ({ attempt }) => {
+        if (attempt === 1) {
+          chrome.runtime.sendMessage({
+            action: 'notify',
+            level: 'warning',
+            title: '下载重试中',
+            message: 'Pixiv图片正在重试...'
+          });
         }
-      });
-    } catch (error) {
-      const retryUrl = url.endsWith('.png')
-        ? url.replace('.png', '.jpg')
-        : url.endsWith('.jpg')
-          ? url.replace('.jpg', '.png')
-          : null;
-      if (!retryUrl) {
-        throw error;
       }
-      await attemptDownload(retryUrl);
-    }
+    });
   }
 }

@@ -33,8 +33,10 @@ export class Notifier {
     });
   }
 
+  // 进度通知使用固定 ID，避免批量下载时反复弹出新通知刷屏。
+  // 用 update 而不是 create，Chrome 会复用同一条通知刷新进度。
   static showProgress(current, total) {
-    chrome.notifications.create({
+    chrome.notifications.update('progress-batch', {
       type: 'progress',
       iconUrl: 'images/icon.png',
       title: '批量下载中',
