@@ -3,6 +3,10 @@ node_modules/
 
 # Build output
 dist/
+*.zip
+
+# Chrome Web Store 生成的缓存
+_metadata/
 
 # Sourcemaps
 *.js.map
