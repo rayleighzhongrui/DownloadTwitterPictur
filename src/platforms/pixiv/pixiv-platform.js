@@ -5,7 +5,7 @@ import { ProxyManager } from '../../core/proxy-manager.js';
 import { pixivCache } from '../../utils/pixiv-dom-cache.js';
 
 const ILLUST_ID_RE = /\/artworks\/(\d+)/;
-const DEBUG = true; // 打开后会在控制台打印 handleAction 路径
+const DEBUG = false; // 生产环境关闭详细调试日志
 
 // 提取作品 ID：
 // 1. DOM 缓存里的 artwork 链接

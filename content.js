@@ -907,7 +907,7 @@
 
   // src/platforms/pixiv/pixiv-platform.js
   var ILLUST_ID_RE = /\/artworks\/(\d+)/;
-  var DEBUG = true;
+  var DEBUG = false;
   function extractIllustId(target, metadata) {
     const fromLink = metadata?.links?.[0]?.href.match(ILLUST_ID_RE)?.[1];
     if (fromLink)

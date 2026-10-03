@@ -33,12 +33,14 @@ const CONFIG = {
     'content.js',
     'content.js.map',
     'background.js',
+    'background.js.map',
+    'popup.js',
+    'popup.js.map',
     'inject.js',
     'popup.html',
-    'popup.js',
     'rules.json',
     'images/',
-    '_metadata/'
+    '_locales/'
   ],
 
   // 需要排除的文件和目录（glob 模式）
@@ -46,12 +48,17 @@ const CONFIG = {
     'src/**',
     'scripts/**',
     'node_modules/**',
+    'tests/**',
+    'docs/**',
     '*.md',
     'package*.json',
     'build.config.js',
+    'vitest.config.js',
     '.git/**',
+    '.github/**',
     '.gitignore',
     '.DS_Store',
+    '**/.DS_Store',
     '*.zip'
   ]
 };
@@ -84,7 +91,8 @@ function checkFilesExist() {
     'popup.html',
     'popup.js',
     'rules.json',
-    'images/icon.png'
+    'images/icon.png',
+    '_locales/en/messages.json'
   ];
 
   for (const file of requiredFiles) {
