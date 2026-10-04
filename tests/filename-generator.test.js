@@ -183,4 +183,28 @@ describe('FilenameGenerator', () => {
       expect(out.endsWith('.png')).toBe(true);
     });
   });
+
+  describe('基于 URL 智能识别扩展名', () => {
+    it('当未显式指定 extension 时从 url 推断 png', () => {
+      const out = g.generate({
+        platform: 'pixiv',
+        formats: ['illustId'],
+        metadata: { illustId: '150410354' },
+        type: 'image',
+        url: 'https://i.pximg.net/img-original/img/2026/10/03/12/00/00/150410354_p0.png'
+      });
+      expect(out).toBe('150410354.png');
+    });
+
+    it('当未显式指定 extension 时从 Twitter format 参数推断 png', () => {
+      const out = g.generate({
+        platform: 'twitter',
+        formats: ['authorName', 'tweetId'],
+        metadata: { authorName: 'artist', tweetId: '987654' },
+        type: 'image',
+        url: 'https://pbs.twimg.com/media/Gf4_aXXX?format=png&name=orig'
+      });
+      expect(out).toBe('artist_987654.png');
+    });
+  });
 });

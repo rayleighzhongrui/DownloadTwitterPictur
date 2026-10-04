@@ -1,3 +1,5 @@
+import { resolveExtension } from '../utils/file-type.js';
+
 // 在主流桌面文件系统（Windows / macOS / Linux ext4 / FAT / NTFS）里都安全的字符集：
 // 仅保留字母、数字、常见中日韩文字、点号、下划线、连字符、括号和空格。
 // 其余全部替换为下划线，避免 chrome.downloads 静默失败。
@@ -47,7 +49,7 @@ export class FilenameGenerator {
     this.clock = clock || (() => new Date());
   }
 
-  generate({ platform, formats, metadata, type, extension, resolution }) {
+  generate({ platform, formats, metadata, type, extension, resolution, url }) {
     const now = this.clock();
     const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
     const parts = [];
@@ -88,11 +90,12 @@ export class FilenameGenerator {
 
     // 多图作品附加页码（无论 formats 是否包含 pageIndex，都补上以避免重名）
     const suffix = pageSuffix(metadata);
+    const finalExt = extension || resolveExtension(url || metadata?.url, type);
 
     if (type === 'video') {
       const res = resolution ? `_${resolution}` : '';
-      return trimLength(`${base}${suffix}${res}.${extension || 'mp4'}`);
+      return trimLength(`${base}${suffix}${res}.${finalExt || 'mp4'}`);
     }
-    return trimLength(`${base}${suffix}.${extension || 'jpg'}`);
+    return trimLength(`${base}${suffix}.${finalExt || 'jpg'}`);
   }
 }

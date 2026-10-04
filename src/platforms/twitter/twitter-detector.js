@@ -1,7 +1,9 @@
 export function findTweetContainer(eventTarget) {
   const likeButton = eventTarget.closest('[data-testid="like"]');
   if (!likeButton) return null;
-  return likeButton.closest('[data-testid="cellInnerDiv"]');
+  // 优先匹配标准推文 article，兜底匹配虚拟列表容器 cellInnerDiv
+  return likeButton.closest('article[data-testid="tweet"]')
+    || likeButton.closest('[data-testid="cellInnerDiv"]');
 }
 
 export function extractTweetMetadata(container) {
@@ -34,10 +36,30 @@ export function extractTweetMetadata(container) {
 }
 
 export function extractTweetImages(container) {
-  return Array.from(container.querySelectorAll('img'))
+  const images = Array.from(container.querySelectorAll('img'))
     .filter(img => img.src && img.src.includes('pbs.twimg.com/media/'));
+
+  const seen = new Set();
+  return images.filter(img => {
+    try {
+      const url = new URL(img.src);
+      const key = url.pathname;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    } catch {
+      return true;
+    }
+  });
 }
 
 export function extractTweetVideoComponents(container) {
-  return Array.from(container.querySelectorAll('[data-testid="videoComponent"]'));
+  // videoComponent 覆盖普通视频播放器；GIF 等其它形态直接落在 <video> 元素上
+  const components = new Set(
+    Array.from(container.querySelectorAll('[data-testid="videoComponent"]'))
+  );
+  for (const video of container.querySelectorAll('video')) {
+    components.add(video.closest('[data-testid="videoComponent"]') || video);
+  }
+  return Array.from(components);
 }

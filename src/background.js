@@ -4,6 +4,7 @@ import { RetryManager } from './utils/retry.js';
 import { Notifier } from './utils/notifier.js';
 import { ErrorLogger } from './utils/error-logger.js';
 import { Storage } from './utils/storage.js';
+import { resolveExtension } from './utils/file-type.js';
 
 const configManager = new ConfigManager();
 const filenameGenerator = new FilenameGenerator();
@@ -47,12 +48,14 @@ async function downloadWithRetry(request, type) {
     ? formats.pixivFilenameFormat
     : formats.twitterFilenameFormat;
 
+  const extension = request.extension || resolveExtension(request.url, type);
   const filename = filenameGenerator.generate({
     platform: request.platform,
     formats: formatList,
     metadata: request,
     type,
-    extension: type === 'video' ? 'mp4' : 'jpg',
+    extension,
+    url: request.url,
     resolution: request.resolution
   });
 

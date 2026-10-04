@@ -68,6 +68,48 @@
     }
   };
 
+  // src/utils/file-type.js
+  var KNOWN_IMAGE_EXTS = /* @__PURE__ */ new Set(["jpg", "jpeg", "png", "gif", "webp"]);
+  var KNOWN_VIDEO_EXTS = /* @__PURE__ */ new Set(["mp4", "webm", "mov"]);
+  function normalizeExtension(ext) {
+    if (!ext)
+      return null;
+    const clean = String(ext).toLowerCase().replace(/^\.+/, "").trim();
+    if (clean === "jpeg")
+      return "jpg";
+    if (KNOWN_IMAGE_EXTS.has(clean) || KNOWN_VIDEO_EXTS.has(clean)) {
+      return clean;
+    }
+    return null;
+  }
+  function resolveExtension(url, type = "image") {
+    const fallback = type === "video" ? "mp4" : "jpg";
+    if (!url || typeof url !== "string") {
+      return fallback;
+    }
+    try {
+      const parsed = new URL(url, "https://dummy.local");
+      const formatParam = parsed.searchParams.get("format");
+      const normalizedFromParam = normalizeExtension(formatParam);
+      if (normalizedFromParam) {
+        return normalizedFromParam;
+      }
+      const cleanPath = parsed.pathname.split(":")[0];
+      const lastSlash = cleanPath.lastIndexOf("/");
+      const filenamePart = lastSlash >= 0 ? cleanPath.slice(lastSlash + 1) : cleanPath;
+      const lastDot = filenamePart.lastIndexOf(".");
+      if (lastDot >= 0) {
+        const extCandidate = filenamePart.slice(lastDot + 1);
+        const normalizedFromPath = normalizeExtension(extCandidate);
+        if (normalizedFromPath) {
+          return normalizedFromPath;
+        }
+      }
+    } catch {
+    }
+    return fallback;
+  }
+
   // src/core/filename-generator.js
   var ILLEGAL = /[\\/:*?"<>|\x00-\x1f]/g;
   var MAX_LENGTH = 200;
@@ -102,7 +144,7 @@
     constructor({ clock } = {}) {
       this.clock = clock || (() => /* @__PURE__ */ new Date());
     }
-    generate({ platform, formats, metadata, type, extension, resolution }) {
+    generate({ platform, formats, metadata, type, extension, resolution, url }) {
       const now = this.clock();
       const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
       const parts = [];
@@ -138,11 +180,12 @@
         base = `${platform || "download"}_${dateStr}`;
       }
       const suffix = pageSuffix(metadata);
+      const finalExt = extension || resolveExtension(url || metadata?.url, type);
       if (type === "video") {
         const res = resolution ? `_${resolution}` : "";
-        return trimLength(`${base}${suffix}${res}.${extension || "mp4"}`);
+        return trimLength(`${base}${suffix}${res}.${finalExt || "mp4"}`);
       }
-      return trimLength(`${base}${suffix}.${extension || "jpg"}`);
+      return trimLength(`${base}${suffix}.${finalExt || "jpg"}`);
     }
   };
 
@@ -315,12 +358,14 @@
     const formats = configCache.formats;
     const notificationsEnabled = configCache.notificationsEnabled;
     const formatList = request.platform === "pixiv" ? formats.pixivFilenameFormat : formats.twitterFilenameFormat;
+    const extension = request.extension || resolveExtension(request.url, type);
     const filename = filenameGenerator.generate({
       platform: request.platform,
       formats: formatList,
       metadata: request,
       type,
-      extension: type === "video" ? "mp4" : "jpg",
+      extension,
+      url: request.url,
       resolution: request.resolution
     });
     const downloadTask = () => new Promise((resolve, reject) => {

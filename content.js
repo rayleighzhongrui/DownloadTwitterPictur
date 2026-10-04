@@ -70,10 +70,38 @@
 
   // src/core/downloader.js
   var Downloader = class {
+    constructor({ dedupWindowMs = 5e3 } = {}) {
+      this.dedupWindowMs = dedupWindowMs;
+      this.recentDownloads = /* @__PURE__ */ new Map();
+    }
+    isDuplicate(url) {
+      if (!url || this.dedupWindowMs <= 0)
+        return false;
+      const now = Date.now();
+      const last = this.recentDownloads.get(url);
+      if (last && now - last < this.dedupWindowMs) {
+        return true;
+      }
+      this.recentDownloads.set(url, now);
+      if (this.recentDownloads.size > 200) {
+        for (const [key, timestamp] of this.recentDownloads.entries()) {
+          if (now - timestamp >= this.dedupWindowMs) {
+            this.recentDownloads.delete(key);
+          }
+        }
+      }
+      return false;
+    }
     async downloadImage({ url, metadata }) {
+      if (this.isDuplicate(url)) {
+        return { success: true, deduplicated: true };
+      }
       return this.sendMessage("downloadImage", { url, ...metadata });
     }
     async downloadVideo({ url, metadata }) {
+      if (this.isDuplicate(url)) {
+        return { success: true, deduplicated: true };
+      }
       return this.sendMessage("downloadVideo", { url, ...metadata });
     }
     sendMessage(action, payload) {
@@ -231,7 +259,7 @@
     const likeButton = eventTarget.closest('[data-testid="like"]');
     if (!likeButton)
       return null;
-    return likeButton.closest('[data-testid="cellInnerDiv"]');
+    return likeButton.closest('article[data-testid="tweet"]') || likeButton.closest('[data-testid="cellInnerDiv"]');
   }
   function extractTweetMetadata(container) {
     let authorId = "unknown_author";
@@ -258,10 +286,29 @@
     return { authorId, tweetId, tweetTime };
   }
   function extractTweetImages(container) {
-    return Array.from(container.querySelectorAll("img")).filter((img) => img.src && img.src.includes("pbs.twimg.com/media/"));
+    const images = Array.from(container.querySelectorAll("img")).filter((img) => img.src && img.src.includes("pbs.twimg.com/media/"));
+    const seen = /* @__PURE__ */ new Set();
+    return images.filter((img) => {
+      try {
+        const url = new URL(img.src);
+        const key = url.pathname;
+        if (seen.has(key))
+          return false;
+        seen.add(key);
+        return true;
+      } catch {
+        return true;
+      }
+    });
   }
   function extractTweetVideoComponents(container) {
-    return Array.from(container.querySelectorAll('[data-testid="videoComponent"]'));
+    const components = new Set(
+      Array.from(container.querySelectorAll('[data-testid="videoComponent"]'))
+    );
+    for (const video of container.querySelectorAll("video")) {
+      components.add(video.closest('[data-testid="videoComponent"]') || video);
+    }
+    return Array.from(components);
   }
 
   // src/platforms/twitter/twitter-api.js
@@ -465,20 +512,32 @@
   }
 
   // src/platforms/twitter/twitter-platform.js
+  var tweetVideoCache = /* @__PURE__ */ new Map();
+  function cacheVideoData(videoData) {
+    if (videoData && videoData.tweetId && typeof videoData.videoUrl === "string" && videoData.videoUrl.startsWith("https://video.twimg.com/")) {
+      tweetVideoCache.set(videoData.tweetId, {
+        videoUrl: videoData.videoUrl,
+        resolution: videoData.resolution,
+        timestamp: Date.now()
+      });
+    }
+  }
+  if (typeof window !== "undefined") {
+    window.addEventListener("message", (event) => {
+      const data = event.data;
+      if (!data || data.source !== "mh-inject")
+        return;
+      if (data.type === "mh:video-captured") {
+        cacheVideoData(data.payload);
+      } else if (data.type === "mh:video-snapshot") {
+        (data.payload || []).forEach((item) => cacheVideoData(item));
+      }
+    });
+  }
   var TwitterPlatform = class extends BasePlatform {
     constructor({ downloader, retryManager }) {
       super({ name: "twitter", downloader, retryManager });
-      this.tweetVideoCache = /* @__PURE__ */ new Map();
-      document.addEventListener("mh:video-captured", (event) => {
-        const videoData = event.detail;
-        if (videoData && videoData.tweetId && videoData.videoUrl) {
-          this.tweetVideoCache.set(videoData.tweetId, {
-            videoUrl: videoData.videoUrl,
-            resolution: videoData.resolution,
-            timestamp: Date.now()
-          });
-        }
-      });
+      window.postMessage({ source: "mh-content", type: "mh:request-videos" }, "*");
     }
     detectAction(event) {
       return Boolean(findTweetContainer(event.target));
@@ -489,19 +548,26 @@
         return false;
       const { authorId, tweetId, tweetTime } = extractTweetMetadata(tweetContainer);
       const images = extractTweetImages(tweetContainer);
-      for (const img of images) {
+      for (let i = 0; i < images.length; i += 1) {
+        const img = images[i];
         const imgUrl = new URL(img.src);
         imgUrl.searchParams.set("name", "orig");
         try {
-          await this.downloadImage(imgUrl.toString(), { authorId, tweetId, tweetTime });
+          await this.downloadImage(imgUrl.toString(), {
+            authorId,
+            tweetId,
+            tweetTime,
+            pageIndex: i + 1,
+            pageTotal: images.length
+          });
         } catch (error) {
           await this.handleError(error, { action: "downloadImage", url: imgUrl.toString() });
         }
       }
       const videoComponents = extractTweetVideoComponents(tweetContainer);
       for (const videoComponent of videoComponents) {
-        const video = videoComponent.querySelector("video");
-        if (!video || !video.poster)
+        const video = videoComponent.tagName === "VIDEO" ? videoComponent : videoComponent.querySelector("video");
+        if (!video)
           continue;
         const cachedVideo = this.getVideoUrlFromCache(tweetId);
         if (cachedVideo) {
@@ -517,27 +583,23 @@
           }
           continue;
         }
-        const posterMatch = video.poster.match(/amplify_video_thumb\/(\d+)\//);
-        if (!posterMatch)
-          continue;
-        const videoId = posterMatch[1];
-        const resolution = `${video.videoWidth}x${video.videoHeight}`;
+        const resolution = video.videoWidth ? `${video.videoWidth}x${video.videoHeight}` : null;
         try {
-          await this.attemptVideoDownload(videoId, resolution, { authorId, tweetId, tweetTime });
+          await this.attemptVideoDownload({ authorId, tweetId, tweetTime }, resolution, video);
         } catch (error) {
-          await this.handleError(error, { action: "downloadVideo", url: video.poster });
+          await this.handleError(error, { action: "downloadVideo", url: video.poster || video.src || "" });
         }
       }
       return true;
     }
     getVideoUrlFromCache(tweetId) {
-      const cached = this.tweetVideoCache.get(tweetId);
+      const cached = tweetVideoCache.get(tweetId);
       if (!cached)
         return null;
       if (Date.now() - cached.timestamp < 36e5) {
         return cached;
       }
-      this.tweetVideoCache.delete(tweetId);
+      tweetVideoCache.delete(tweetId);
       return null;
     }
     async downloadImage(url, metadata) {
@@ -573,7 +635,7 @@
         metadata: { ...metadata, platform: "twitter" }
       });
     }
-    async attemptVideoDownload(videoId, resolution, metadata) {
+    async attemptVideoDownload(metadata, resolution = null, videoEl = null) {
       const cachedVideo = this.getVideoUrlFromCache(metadata.tweetId);
       if (cachedVideo) {
         await this.downloadVideo(cachedVideo.videoUrl, {
@@ -586,9 +648,14 @@
         const videoUrl = await fetchVideoUrlFromTwitterAPI(metadata.tweetId);
         if (videoUrl) {
           await this.downloadVideo(videoUrl, { resolution, ...metadata });
+          return;
         }
       } catch (error) {
         console.log("Twitter API \u65B9\u6CD5\u5931\u8D25:", error.message);
+      }
+      const src = videoEl?.currentSrc || videoEl?.src || "";
+      if (/^https?:/.test(src) && src.includes("video.twimg.com")) {
+        await this.downloadVideo(src, { resolution, ...metadata });
       }
     }
   };

@@ -2,20 +2,43 @@ import { BasePlatform } from '../base-platform.js';
 import { findTweetContainer, extractTweetMetadata, extractTweetImages, extractTweetVideoComponents } from './twitter-detector.js';
 import { fetchVideoUrlFromTwitterAPI } from './twitter-api.js';
 
+// 模块级视频缓存：跨平台实例共享，用户开关 Twitter 功能时不丢失已捕获的数据
+const tweetVideoCache = new Map();
+
+function cacheVideoData(videoData) {
+  // 只接受 Twitter 视频 CDN 的地址，防止页面内其它脚本伪造消息注入任意下载地址
+  if (videoData && videoData.tweetId
+    && typeof videoData.videoUrl === 'string'
+    && videoData.videoUrl.startsWith('https://video.twimg.com/')) {
+    tweetVideoCache.set(videoData.tweetId, {
+      videoUrl: videoData.videoUrl,
+      resolution: videoData.resolution,
+      timestamp: Date.now()
+    });
+  }
+}
+
+// inject.js 运行在 MAIN world：CustomEvent.detail 跨 world 会丢失，
+// 必须通过 window.postMessage 通信（Chrome 官方推荐的页面 <-> 扩展桥接方式）
+if (typeof window !== 'undefined') {
+  window.addEventListener('message', event => {
+    const data = event.data;
+    if (!data || data.source !== 'mh-inject') return;
+
+    if (data.type === 'mh:video-captured') {
+      cacheVideoData(data.payload);
+    } else if (data.type === 'mh:video-snapshot') {
+      (data.payload || []).forEach(item => cacheVideoData(item));
+    }
+  });
+}
+
 export class TwitterPlatform extends BasePlatform {
   constructor({ downloader, retryManager }) {
     super({ name: 'twitter', downloader, retryManager });
-    this.tweetVideoCache = new Map();
-    document.addEventListener('mh:video-captured', event => {
-      const videoData = event.detail;
-      if (videoData && videoData.tweetId && videoData.videoUrl) {
-        this.tweetVideoCache.set(videoData.tweetId, {
-          videoUrl: videoData.videoUrl,
-          resolution: videoData.resolution,
-          timestamp: Date.now()
-        });
-      }
-    });
+
+    // 拉取 inject.js 在 content script 启动前捕获的视频快照，弥补初始化时序竞争
+    window.postMessage({ source: 'mh-content', type: 'mh:request-videos' }, '*');
   }
 
   detectAction(event) {
@@ -29,11 +52,18 @@ export class TwitterPlatform extends BasePlatform {
     const { authorId, tweetId, tweetTime } = extractTweetMetadata(tweetContainer);
     const images = extractTweetImages(tweetContainer);
 
-    for (const img of images) {
+    for (let i = 0; i < images.length; i += 1) {
+      const img = images[i];
       const imgUrl = new URL(img.src);
       imgUrl.searchParams.set('name', 'orig');
       try {
-        await this.downloadImage(imgUrl.toString(), { authorId, tweetId, tweetTime });
+        await this.downloadImage(imgUrl.toString(), {
+          authorId,
+          tweetId,
+          tweetTime,
+          pageIndex: i + 1,
+          pageTotal: images.length
+        });
       } catch (error) {
         await this.handleError(error, { action: 'downloadImage', url: imgUrl.toString() });
       }
@@ -41,8 +71,11 @@ export class TwitterPlatform extends BasePlatform {
 
     const videoComponents = extractTweetVideoComponents(tweetContainer);
     for (const videoComponent of videoComponents) {
-      const video = videoComponent.querySelector('video');
-      if (!video || !video.poster) continue;
+      // GIF 播放器可能本身就是 <video> 元素（无 videoComponent 容器）
+      const video = videoComponent.tagName === 'VIDEO'
+        ? videoComponent
+        : videoComponent.querySelector('video');
+      if (!video) continue;
 
       const cachedVideo = this.getVideoUrlFromCache(tweetId);
       if (cachedVideo) {
@@ -59,15 +92,14 @@ export class TwitterPlatform extends BasePlatform {
         continue;
       }
 
-      const posterMatch = video.poster.match(/amplify_video_thumb\/(\d+)\//);
-      if (!posterMatch) continue;
-
-      const videoId = posterMatch[1];
-      const resolution = `${video.videoWidth}x${video.videoHeight}`;
+      // 未播放时 videoWidth 可能为 0，此时不上分辨率后缀
+      const resolution = video.videoWidth
+        ? `${video.videoWidth}x${video.videoHeight}`
+        : null;
       try {
-        await this.attemptVideoDownload(videoId, resolution, { authorId, tweetId, tweetTime });
+        await this.attemptVideoDownload({ authorId, tweetId, tweetTime }, resolution, video);
       } catch (error) {
-        await this.handleError(error, { action: 'downloadVideo', url: video.poster });
+        await this.handleError(error, { action: 'downloadVideo', url: video.poster || video.src || '' });
       }
     }
 
@@ -75,12 +107,12 @@ export class TwitterPlatform extends BasePlatform {
   }
 
   getVideoUrlFromCache(tweetId) {
-    const cached = this.tweetVideoCache.get(tweetId);
+    const cached = tweetVideoCache.get(tweetId);
     if (!cached) return null;
     if (Date.now() - cached.timestamp < 3600000) {
       return cached;
     }
-    this.tweetVideoCache.delete(tweetId);
+    tweetVideoCache.delete(tweetId);
     return null;
   }
 
@@ -120,7 +152,7 @@ export class TwitterPlatform extends BasePlatform {
     });
   }
 
-  async attemptVideoDownload(videoId, resolution, metadata) {
+  async attemptVideoDownload(metadata, resolution = null, videoEl = null) {
     const cachedVideo = this.getVideoUrlFromCache(metadata.tweetId);
     if (cachedVideo) {
       await this.downloadVideo(cachedVideo.videoUrl, {
@@ -134,10 +166,17 @@ export class TwitterPlatform extends BasePlatform {
       const videoUrl = await fetchVideoUrlFromTwitterAPI(metadata.tweetId);
       if (videoUrl) {
         await this.downloadVideo(videoUrl, { resolution, ...metadata });
+        return;
       }
     } catch (error) {
-      // GraphQL 拿不到时只记录，不再死磕页面脚本（不可靠且会污染 fetch）
+      // GraphQL 拿不到时只记录（queryId 可能已过期）
       console.log('Twitter API 方法失败:', error.message);
+    }
+
+    // 最后兜底：GIF 等场景下 video 元素本身就是可直连的 mp4 地址（非 blob 流）
+    const src = videoEl?.currentSrc || videoEl?.src || '';
+    if (/^https?:/.test(src) && src.includes('video.twimg.com')) {
+      await this.downloadVideo(src, { resolution, ...metadata });
     }
   }
 }
