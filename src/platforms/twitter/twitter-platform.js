@@ -1,6 +1,10 @@
 import { BasePlatform } from '../base-platform.js';
 import { findTweetContainer, extractTweetMetadata, extractTweetImages, extractTweetVideoComponents } from './twitter-detector.js';
 import { fetchVideoUrlFromTwitterAPI } from './twitter-api.js';
+import { mapLimit } from '../../utils/concurrency.js';
+import { t } from '../../utils/i18n.js';
+
+const DOWNLOAD_CONCURRENCY = 3;
 
 // 模块级视频缓存：跨平台实例共享，用户开关 Twitter 功能时不丢失已捕获的数据
 const tweetVideoCache = new Map();
@@ -52,8 +56,9 @@ export class TwitterPlatform extends BasePlatform {
     const { authorId, tweetId, tweetTime } = extractTweetMetadata(tweetContainer);
     const images = extractTweetImages(tweetContainer);
 
-    for (let i = 0; i < images.length; i += 1) {
-      const img = images[i];
+    // 多图限流并发：单图失败不中断整批，进度按完成数上报
+    let completedImages = 0;
+    await mapLimit(images, DOWNLOAD_CONCURRENCY, async (img, i) => {
       const imgUrl = new URL(img.src);
       imgUrl.searchParams.set('name', 'orig');
       try {
@@ -66,8 +71,11 @@ export class TwitterPlatform extends BasePlatform {
         });
       } catch (error) {
         await this.handleError(error, { action: 'downloadImage', url: imgUrl.toString() });
+      } finally {
+        completedImages += 1;
+        this.sendBatchProgress(`twitter:${tweetId}`, completedImages, images.length);
       }
-    }
+    });
 
     const videoComponents = extractTweetVideoComponents(tweetContainer);
     for (const videoComponent of videoComponents) {
@@ -137,8 +145,8 @@ export class TwitterPlatform extends BasePlatform {
           chrome.runtime.sendMessage({
             action: 'notify',
             level: 'warning',
-            title: '下载重试中',
-            message: 'Twitter图片正在重试...'
+            title: t('notifRetryTitle', [], '下载重试中'),
+            message: t('notifRetryTwitter', [], 'Twitter 图片正在重试…')
           });
         }
       }

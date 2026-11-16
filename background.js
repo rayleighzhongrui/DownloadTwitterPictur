@@ -21,12 +21,7 @@
     pixivSwitchActive: true,
     notificationsEnabled: true,
     twitterFilenameFormat: ["account", "tweetId"],
-    pixivFilenameFormat: ["authorName", "illustId"],
-    pixivProxies: [],
-    activeProxyId: null,
-    autoSwitchProxy: true,
-    roundRobinProxy: false,
-    proxyTestUrl: "https://www.pixiv.net/artworks/119870733"
+    pixivFilenameFormat: ["authorName", "illustId"]
   };
   var ConfigManager = class {
     async getSwitches() {
@@ -46,22 +41,6 @@
     async getNotificationSetting() {
       const result = await Storage.getSync("notificationsEnabled");
       return typeof result.notificationsEnabled === "undefined" ? DEFAULTS.notificationsEnabled : result.notificationsEnabled;
-    }
-    async getProxySettings() {
-      const result = await Storage.getSync([
-        "pixivProxies",
-        "activeProxyId",
-        "autoSwitchProxy",
-        "roundRobinProxy",
-        "proxyTestUrl"
-      ]);
-      return {
-        pixivProxies: result.pixivProxies || DEFAULTS.pixivProxies,
-        activeProxyId: result.activeProxyId || DEFAULTS.activeProxyId,
-        autoSwitchProxy: typeof result.autoSwitchProxy === "undefined" ? DEFAULTS.autoSwitchProxy : result.autoSwitchProxy,
-        roundRobinProxy: typeof result.roundRobinProxy === "undefined" ? DEFAULTS.roundRobinProxy : result.roundRobinProxy,
-        proxyTestUrl: result.proxyTestUrl || DEFAULTS.proxyTestUrl
-      };
     }
     async setSettings(settings) {
       await Storage.setSync(settings);
@@ -237,27 +216,26 @@
     }
   };
 
-  // src/utils/notifier.js
-  var Notifier = class {
-    static showSuccess(title, message, options = {}) {
-      chrome.notifications.create({
-        type: "basic",
-        iconUrl: "images/icon.png",
-        title,
-        message,
-        requireInteraction: false,
-        ...options
-      });
+  // src/utils/i18n.js
+  function t(key, substitutions = [], fallback = "") {
+    try {
+      const msg = chrome.i18n.getMessage(key, substitutions);
+      if (msg)
+        return msg;
+    } catch (e) {
     }
-    static showError(title, error, actionUrl = null) {
+    return fallback;
+  }
+
+  // src/utils/notifier.js
+  var PROGRESS_ID = "batch-progress";
+  var Notifier = class {
+    static showSuccess(title, message) {
       chrome.notifications.create({
         type: "basic",
         iconUrl: "images/icon.png",
         title,
-        message: `\u4E0B\u8F7D\u5931\u8D25\uFF1A${error?.message || error}`,
-        requireInteraction: true,
-        buttons: actionUrl ? [{ title: "\u67E5\u770B\u8BE6\u60C5" }] : [],
-        priority: 2
+        message
       });
     }
     static showWarning(title, message) {
@@ -266,20 +244,37 @@
         iconUrl: "images/icon.png",
         title,
         message,
-        requireInteraction: false,
         priority: 1
       });
     }
-    // 进度通知使用固定 ID，避免批量下载时反复弹出新通知刷屏。
-    // 用 update 而不是 create，Chrome 会复用同一条通知刷新进度。
+    static showError(title, message) {
+      chrome.notifications.create({
+        type: "basic",
+        iconUrl: "images/icon.png",
+        title,
+        message,
+        requireInteraction: true,
+        priority: 2
+      });
+    }
+    // 进度通知使用固定 ID 复用同一条通知，避免批量下载时刷屏。
+    // update 的目标不存在时（首次或通知被用户关闭）回退到 create。
     static showProgress(current, total) {
-      chrome.notifications.update("progress-batch", {
+      const options = {
         type: "progress",
         iconUrl: "images/icon.png",
-        title: "\u6279\u91CF\u4E0B\u8F7D\u4E2D",
-        message: `\u5DF2\u5B8C\u6210 ${current}/${total}`,
-        progress: Math.round(current / total * 100)
+        title: t("notifBatchTitle", [], "\u6279\u91CF\u4E0B\u8F7D\u4E2D"),
+        message: t("notifBatchProgress", [String(current), String(total)], `\u5DF2\u5B8C\u6210 ${current}/${total}`),
+        progress: total > 0 ? Math.round(current / total * 100) : 0
+      };
+      chrome.notifications.update(PROGRESS_ID, options, (wasUpdated) => {
+        if (chrome.runtime.lastError || !wasUpdated) {
+          chrome.notifications.create(PROGRESS_ID, options);
+        }
       });
+    }
+    static clearProgress() {
+      chrome.notifications.clear(PROGRESS_ID);
     }
   };
 
@@ -353,6 +348,7 @@
       configCache.hydrated = false;
     }
   }
+  var downloadMetaCache = /* @__PURE__ */ new Map();
   async function downloadWithRetry(request, type) {
     await ensureHydrated();
     const formats = configCache.formats;
@@ -377,17 +373,25 @@
         resolve(downloadId);
       });
     });
+    const isBatchItem = Number(request.pageTotal) > 1;
     try {
       const downloadId = await retryManager.retry(downloadTask, {
         name: type === "video" ? "\u89C6\u9891\u4E0B\u8F7D" : "\u56FE\u7247\u4E0B\u8F7D",
         onRetry: ({ attempt }) => {
           if (attempt === 2 && notificationsEnabled) {
-            Notifier.showWarning("\u4E0B\u8F7D\u91CD\u8BD5\u4E2D", "\u7F51\u7EDC\u6CE2\u52A8\u5BFC\u81F4\u5931\u8D25\uFF0C\u6B63\u5728\u91CD\u8BD5...");
+            Notifier.showWarning(
+              t("notifRetryTitle", [], "\u4E0B\u8F7D\u91CD\u8BD5\u4E2D"),
+              t("notifRetryGeneric", [], "\u7F51\u7EDC\u6CE2\u52A8\u5BFC\u81F4\u5931\u8D25\uFF0C\u6B63\u5728\u91CD\u8BD5\u2026")
+            );
           }
         }
       });
-      if (notificationsEnabled) {
-        Notifier.showSuccess("\u4E0B\u8F7D\u5F00\u59CB", `${type === "video" ? "\u89C6\u9891" : "\u56FE\u7247"}\u5DF2\u52A0\u5165\u4E0B\u8F7D\u961F\u5217`);
+      downloadMetaCache.set(downloadId, { platform: request.platform, url: request.url, filename });
+      if (notificationsEnabled && !isBatchItem) {
+        Notifier.showSuccess(
+          t("notifQueuedTitle", [], "\u4E0B\u8F7D\u5F00\u59CB"),
+          t(type === "video" ? "notifQueuedVideo" : "notifQueuedImage", [], "\u5DF2\u52A0\u5165\u4E0B\u8F7D\u961F\u5217")
+        );
       }
       return { success: true, downloadId };
     } catch (error) {
@@ -400,9 +404,39 @@
         success: false
       });
       if (notificationsEnabled) {
-        Notifier.showError("\u4E0B\u8F7D\u5931\u8D25", error);
+        Notifier.showError(
+          t("notifFailedTitle", [], "\u4E0B\u8F7D\u5931\u8D25"),
+          t("notifFailedMessage", [error.message], `\u4E0B\u8F7D\u5931\u8D25\uFF1A${error.message}`)
+        );
       }
       return { success: false, error: error.message };
+    }
+  }
+  var batchProgress = /* @__PURE__ */ new Map();
+  function handleDownloadProgress({ batchKey, current, total }) {
+    const key = batchKey || "default";
+    const prev = batchProgress.get(key) || { current: 0, total: 0 };
+    batchProgress.set(key, {
+      current: Math.max(prev.current, Number(current) || 0),
+      total: Math.max(prev.total, Number(total) || 0)
+    });
+    let done = 0;
+    let sum = 0;
+    for (const batch of batchProgress.values()) {
+      done += batch.current;
+      sum += batch.total;
+    }
+    if (done < sum) {
+      Notifier.showProgress(done, sum);
+      return;
+    }
+    batchProgress.clear();
+    Notifier.clearProgress();
+    if (sum > 0) {
+      Notifier.showSuccess(
+        t("notifBatchDoneTitle", [], "\u6279\u91CF\u4E0B\u8F7D\u5B8C\u6210"),
+        t("notifBatchDoneMessage", [String(sum)], `\u5171 ${sum} \u4E2A\u6587\u4EF6\u5DF2\u52A0\u5165\u4E0B\u8F7D\u961F\u5217`)
+      );
     }
   }
   chrome.storage.onChanged.addListener((changes, area) => {
@@ -432,34 +466,41 @@
       });
     }
     if (request.action === "downloadProgress") {
+      handleDownloadProgress(request);
+    }
+  });
+  chrome.downloads.onChanged.addListener((delta) => {
+    if (!delta.state)
+      return;
+    if (delta.state.current === "complete") {
+      downloadMetaCache.delete(delta.id);
+      return;
+    }
+    if (delta.state.current !== "interrupted")
+      return;
+    const meta = downloadMetaCache.get(delta.id) || {};
+    downloadMetaCache.delete(delta.id);
+    const error = delta.error && delta.error.current || "INTERRUPTED";
+    chrome.downloads.search({ id: delta.id }, (items) => {
+      const item = Array.isArray(items) ? items[0] : null;
+      const filePath = item && item.filename || meta.filename || "";
+      const file = filePath.split(/[\\/]/).pop() || "";
+      ErrorLogger.log({
+        platform: meta.platform || "unknown",
+        action: "downloadInterrupted",
+        url: meta.url || item && (item.finalUrl || item.url) || "",
+        error,
+        success: false
+      });
       ensureHydrated().then(() => {
         if (!configCache.notificationsEnabled)
           return;
-        Notifier.showProgress(request.current, request.total);
+        Notifier.showError(
+          t("notifInterruptedTitle", [], "\u4E0B\u8F7D\u5DF2\u4E2D\u65AD"),
+          t("notifInterruptedMessage", [file || "-", error], `${file} ${error}`)
+        );
       });
-    }
-  });
-  chrome.runtime.onInstalled.addListener(async (details) => {
-    if (details.reason !== "update")
-      return;
-    const { pixivProxies = [] } = await Storage.getSync("pixivProxies");
-    if (pixivProxies.length > 0)
-      return;
-    const legacyProxy = "pixiv.zhongrui.app";
-    await Storage.setSync({
-      pixivProxies: [{
-        id: "migrated-proxy",
-        name: "\u5386\u53F2\u4EE3\u7406\uFF08\u5DF2\u8FC1\u79FB\uFF09",
-        domain: legacyProxy,
-        enabled: true,
-        priority: 1
-      }],
-      activeProxyId: "migrated-proxy"
     });
-    await ensureHydrated();
-    if (configCache.notificationsEnabled) {
-      Notifier.showSuccess("\u4EE3\u7406\u914D\u7F6E\u5DF2\u5347\u7EA7", "Pixiv \u4EE3\u7406\u8BBE\u7F6E\u5DF2\u8FC1\u79FB\u5230\u65B0\u914D\u7F6E\u9762\u677F\u3002");
-    }
   });
 })();
 //# sourceMappingURL=background.js.map

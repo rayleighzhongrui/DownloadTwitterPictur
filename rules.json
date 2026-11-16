@@ -1,17 +1,30 @@
 [
-    {
-      "id": 1,
-      "priority": 1,
-      "action": {
-        "type": "modifyHeaders",
-        "requestHeaders": [
-          { "header": "Referer", "operation": "set", "value": "https://www.pixiv.net/" }
-        ]
-      },
-      "condition": {
-        "urlFilter": "i.pximg.net",
-        "resourceTypes": ["xmlhttprequest"]
-      }
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        { "header": "Referer", "operation": "set", "value": "https://www.pixiv.net/" }
+      ]
+    },
+    "condition": {
+      "urlFilter": "i.pximg.net",
+      "resourceTypes": ["xmlhttprequest"]
     }
-  ]
-  
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "responseHeaders": [
+        { "header": "Access-Control-Allow-Origin", "operation": "set", "value": "*" }
+      ]
+    },
+    "condition": {
+      "urlFilter": "i.pximg.net",
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  }
+]

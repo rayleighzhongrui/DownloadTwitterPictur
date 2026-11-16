@@ -3,6 +3,10 @@ import { findPixivBookmarkButton, findArtworkContainer } from './pixiv-detector.
 import { fetchIllustMeta, fetchIllustPages } from './pixiv-api.js';
 import { ProxyManager } from '../../core/proxy-manager.js';
 import { pixivCache } from '../../utils/pixiv-dom-cache.js';
+import { mapLimit } from '../../utils/concurrency.js';
+import { t } from '../../utils/i18n.js';
+
+const DOWNLOAD_CONCURRENCY = 3;
 
 const ILLUST_ID_RE = /\/artworks\/(\d+)/;
 const DEBUG = false; // 生产环境关闭详细调试日志
@@ -97,18 +101,23 @@ export class PixivPlatform extends BasePlatform {
       pageTotal: pages.length
     };
 
-    for (let i = 0; i < pages.length; i += 1) {
-      const originalUrl = pages[i].urls?.original;
-      if (!originalUrl) continue;
-      try {
-        await this.downloadWithFallback(originalUrl, {
-          ...fileMeta,
-          pageIndex: i + 1
-        });
-      } catch (error) {
-        await this.handleError(error, { action: 'downloadImage', url: originalUrl });
+    // 多页限流并发：单页失败不中断整批，进度按完成数上报
+    let completedPages = 0;
+    await mapLimit(pages, DOWNLOAD_CONCURRENCY, async (page, i) => {
+      const originalUrl = page.urls?.original;
+      if (originalUrl) {
+        try {
+          await this.downloadWithFallback(originalUrl, {
+            ...fileMeta,
+            pageIndex: i + 1
+          });
+        } catch (error) {
+          await this.handleError(error, { action: 'downloadImage', url: originalUrl });
+        }
       }
-    }
+      completedPages += 1;
+      this.sendBatchProgress(`pixiv:${fileMeta.illustId}`, completedPages, pages.length);
+    });
 
     return true;
   }
@@ -170,8 +179,8 @@ export class PixivPlatform extends BasePlatform {
           chrome.runtime.sendMessage({
             action: 'notify',
             level: 'warning',
-            title: '下载重试中',
-            message: 'Pixiv图片正在重试...'
+            title: t('notifRetryTitle', [], '下载重试中'),
+            message: t('notifRetryPixiv', [], 'Pixiv 图片正在重试…')
           });
         }
       }

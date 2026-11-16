@@ -1,118 +1,221 @@
 {
-  "extensionName": {
-    "message": "Stahování originálů obrázků Twitter & Pixiv",
-    "description": "Name of the extension"
-  },
-  "extensionDescription": {
-    "message": "Stahujte originální obrázky z Twitteru a Pixivu při lajkování/ukládání do záložek. Výchozí název souboru: autor+ID příspěvku+čas",
-    "description": "Description of the extension"
-  },
-  "popupTitle": {
-    "message": "Nastavení formátu názvu souboru",
-    "description": "Title of the popup settings page"
-  },
-  "twitterLabel": {
-    "message": "Twitter",
-    "description": "Label for Twitter switch"
-  },
-  "pixivLabel": {
-    "message": "Pixiv",
-    "description": "Label for Pixiv switch"
-  },
-  "twitterFormatTitle": {
-    "message": "Formát názvu souboru Twitter",
-    "description": "Title for Twitter format section"
-  },
-  "pixivFormatTitle": {
-    "message": "Formát názvu souboru Pixiv",
-    "description": "Title for Pixiv format section"
-  },
-  "formatAccount": {
-    "message": "Účet",
-    "description": "Format option for account name"
-  },
-  "formatTweetId": {
-    "message": "ID tweetu",
-    "description": "Format option for tweet ID"
-  },
-  "formatTweetTime": {
-    "message": "Čas tweetu",
-    "description": "Format option for tweet time"
-  },
-  "formatDownloadDate": {
-    "message": "Datum stažení",
-    "description": "Format option for download date"
-  },
-  "formatAuthorName": {
-    "message": "Jméno autora",
-    "description": "Format option for author name"
-  },
-  "formatAuthorId": {
-    "message": "ID autora",
-    "description": "Format option for author ID"
-  },
-  "formatIllustId": {
-    "message": "ID ilustrace",
-    "description": "Format option for illustration ID"
-  },
-  "exampleTwitterImage": {
-    "message": "Příklad obrázku Twitter",
-    "description": "Example title for Twitter images"
-  },
-  "exampleTwitterVideo": {
-    "message": "Příklad videa Twitter",
-    "description": "Example title for Twitter videos"
-  },
-  "examplePixiv": {
-    "message": "Příklad názvu souboru Pixiv",
-    "description": "Example title for Pixiv files"
-  },
-  "saveButton": {
-    "message": "Uložit nastavení",
-    "description": "Save button text"
-  },
-  "saveSuccess": {
-    "message": "Úspěšně uloženo!",
-    "description": "Success message"
-  },
-  "settingsUpdated": {
-    "message": "Nastavení aktualizováno",
-    "description": "Settings updated message"
-  },
-  "tabSettings": {
-    "message": "Nastavení",
-    "description": "Settings tab label"
-  },
-  "tabLogs": {
-    "message": "Protokoly",
-    "description": "Logs tab label"
-  },
-  "notificationLabel": {
-    "message": "Oznámení",
-    "description": "Label for notification switch"
-  },
-  "errorLogTitle": {
-    "message": "Chybové protokoly",
-    "description": "Title for error logs section"
-  },
-  "logFilterAll": {
-    "message": "Všechny platformy",
-    "description": "Log filter option for all platforms"
-  },
-  "clearLogs": {
-    "message": "Vymazat protokoly",
-    "description": "Clear logs button text"
-  },
-  "exportLogs": {
-    "message": "Exportovat protokoly",
-    "description": "Export logs button text"
-  },
-  "noLogs": {
-    "message": "Žádné chybové protokoly",
-    "description": "Empty state text when no error logs"
-  },
-  "noLogsToExport": {
-    "message": "Žádné protokoly k exportu",
-    "description": "Alert message when there are no logs to export"
-  }
+    "extensionName": {
+        "message": "Stahování originálů obrázků Twitter & Pixiv",
+        "description": "Name of the extension"
+    },
+    "extensionDescription": {
+        "message": "Stahujte originální obrázky z Twitteru a Pixivu při lajkování/ukládání do záložek. Výchozí název souboru: autor+ID příspěvku+čas",
+        "description": "Description of the extension"
+    },
+    "popupTitle": {
+        "message": "Nastavení stahování"
+    },
+    "twitterLabel": {
+        "message": "Twitter",
+        "description": "Label for Twitter switch"
+    },
+    "pixivLabel": {
+        "message": "Pixiv",
+        "description": "Label for Pixiv switch"
+    },
+    "twitterFormatTitle": {
+        "message": "Formát názvu souboru Twitter",
+        "description": "Title for Twitter format section"
+    },
+    "pixivFormatTitle": {
+        "message": "Formát názvu souboru Pixiv",
+        "description": "Title for Pixiv format section"
+    },
+    "formatAccount": {
+        "message": "Účet",
+        "description": "Format option for account name"
+    },
+    "formatTweetId": {
+        "message": "ID tweetu",
+        "description": "Format option for tweet ID"
+    },
+    "formatTweetTime": {
+        "message": "Čas tweetu",
+        "description": "Format option for tweet time"
+    },
+    "formatDownloadDate": {
+        "message": "Datum stažení",
+        "description": "Format option for download date"
+    },
+    "formatAuthorName": {
+        "message": "Jméno autora",
+        "description": "Format option for author name"
+    },
+    "formatAuthorId": {
+        "message": "ID autora",
+        "description": "Format option for author ID"
+    },
+    "formatIllustId": {
+        "message": "ID ilustrace",
+        "description": "Format option for illustration ID"
+    },
+    "exampleTwitterImage": {
+        "message": "Příklad obrázku Twitter",
+        "description": "Example title for Twitter images"
+    },
+    "exampleTwitterVideo": {
+        "message": "Příklad videa Twitter",
+        "description": "Example title for Twitter videos"
+    },
+    "examplePixiv": {
+        "message": "Příklad názvu souboru Pixiv",
+        "description": "Example title for Pixiv files"
+    },
+    "tabSettings": {
+        "message": "Nastavení",
+        "description": "Settings tab label"
+    },
+    "tabLogs": {
+        "message": "Protokoly",
+        "description": "Logs tab label"
+    },
+    "notificationLabel": {
+        "message": "Oznámení",
+        "description": "Label for notification switch"
+    },
+    "errorLogTitle": {
+        "message": "Chybové protokoly",
+        "description": "Title for error logs section"
+    },
+    "logFilterAll": {
+        "message": "Všechny platformy",
+        "description": "Log filter option for all platforms"
+    },
+    "clearLogs": {
+        "message": "Vymazat protokoly",
+        "description": "Clear logs button text"
+    },
+    "exportLogs": {
+        "message": "Exportovat protokoly",
+        "description": "Export logs button text"
+    },
+    "noLogs": {
+        "message": "Žádné chybové protokoly",
+        "description": "Empty state text when no error logs"
+    },
+    "noLogsToExport": {
+        "message": "Žádné protokoly k exportu",
+        "description": "Alert message when there are no logs to export"
+    },
+    "sectionPlatforms": {
+        "message": "Platformy"
+    },
+    "sectionGeneral": {
+        "message": "Obecné"
+    },
+    "autoSaveHint": {
+        "message": "Změny se projeví okamžitě a automaticky se uloží"
+    },
+    "resetButton": {
+        "message": "Obnovit výchozí"
+    },
+    "savedToast": {
+        "message": "Nastavení uloženo"
+    },
+    "exampleMultiPageNote": {
+        "message": "U děl s více obrázky se automaticky přidá přípona strany _p01"
+    },
+    "clearLogsConfirm": {
+        "message": "Vymazat všechny protokoly?"
+    },
+    "logsExportedToast": {
+        "message": "Protokoly exportovány"
+    },
+    "examplePartAccount": {
+        "message": "PříkladUživatel_"
+    },
+    "examplePartTweetId": {
+        "message": "88669977_"
+    },
+    "examplePartTweetTime": {
+        "message": "20230810_"
+    },
+    "examplePartAuthorName": {
+        "message": "PříkladAutor_"
+    },
+    "examplePartAuthorId": {
+        "message": "12345_"
+    },
+    "examplePartIllustId": {
+        "message": "88669977_"
+    },
+    "examplePartDownloadDate": {
+        "message": "20230811_"
+    },
+    "notifQueuedTitle": {
+        "message": "Stahování zahájeno"
+    },
+    "notifQueuedImage": {
+        "message": "Obrázek byl přidán do fronty stahování"
+    },
+    "notifQueuedVideo": {
+        "message": "Video bylo přidáno do fronty stahování"
+    },
+    "notifRetryTitle": {
+        "message": "Opakuje se stahování"
+    },
+    "notifRetryGeneric": {
+        "message": "Síťová chyba — opakuji pokus…"
+    },
+    "notifRetryTwitter": {
+        "message": "Opakuji stahování obrázku z Twitteru…"
+    },
+    "notifRetryPixiv": {
+        "message": "Opakuji stahování obrázku z Pixivu…"
+    },
+    "notifFailedTitle": {
+        "message": "Stahování se nezdařilo"
+    },
+    "notifFailedMessage": {
+        "message": "Stahování se nezdařilo: $ERROR$",
+        "placeholders": {
+            "error": {
+                "content": "$1"
+            }
+        }
+    },
+    "notifBatchTitle": {
+        "message": "Hromadné stahování"
+    },
+    "notifBatchProgress": {
+        "message": "Dokončeno $CURRENT$/$TOTAL$",
+        "placeholders": {
+            "current": {
+                "content": "$1"
+            },
+            "total": {
+                "content": "$2"
+            }
+        }
+    },
+    "notifBatchDoneTitle": {
+        "message": "Hromadné stahování dokončeno"
+    },
+    "notifBatchDoneMessage": {
+        "message": "Celkem $COUNT$ souborů ve frontě",
+        "placeholders": {
+            "count": {
+                "content": "$1"
+            }
+        }
+    },
+    "notifInterruptedTitle": {
+        "message": "Stahování přerušeno"
+    },
+    "notifInterruptedMessage": {
+        "message": "$FILE$: $ERROR$",
+        "placeholders": {
+            "file": {
+                "content": "$1"
+            },
+            "error": {
+                "content": "$2"
+            }
+        }
+    }
 }

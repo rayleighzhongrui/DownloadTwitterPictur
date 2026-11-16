@@ -29,4 +29,14 @@ export class BasePlatform {
       success: false
     });
   }
+
+  // 批量下载进度上报：单项完成（无论成败）后调用，由 background 聚合展示
+  sendBatchProgress(batchKey, current, total) {
+    if (!total || total <= 1) return;
+    try {
+      chrome.runtime.sendMessage({ action: 'downloadProgress', batchKey, current, total });
+    } catch (e) {
+      // 扩展上下文失效（页面卸载中）时静默忽略
+    }
+  }
 }

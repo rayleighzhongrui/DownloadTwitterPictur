@@ -1,39 +1,44 @@
 import { Storage } from './utils/storage.js';
+import { t } from './utils/i18n.js';
 
 const DEFAULT_TWITTER_FORMATS = ['account', 'tweetId'];
 const DEFAULT_PIXIV_FORMATS = ['authorName', 'illustId'];
 
-// 国际化文案读取封装
-function t(key) {
-  if (typeof chrome !== 'undefined' && chrome.i18n && chrome.i18n.getMessage) {
-    const msg = chrome.i18n.getMessage(key);
-    if (msg) return msg;
+// 文件名片段 -> i18n key（示例文件名文案统一走 _locales，不再在 JS 里维护 8 份语言表）
+const FORMAT_PART_KEYS = {
+  account: 'examplePartAccount',
+  tweetId: 'examplePartTweetId',
+  tweetTime: 'examplePartTweetTime',
+  authorName: 'examplePartAuthorName',
+  authorId: 'examplePartAuthorId',
+  illustId: 'examplePartIllustId',
+  downloadDate: 'examplePartDownloadDate'
+};
+
+// i18n key 缺失时的兜底（与 _locales/en 一致）
+const FORMAT_PART_FALLBACKS = {
+  account: 'exampleUser_',
+  tweetId: '88669977_',
+  tweetTime: '20230810_',
+  authorName: 'exampleAuthor_',
+  authorId: '12345_',
+  illustId: '88669977_',
+  downloadDate: '20230811_'
+};
+
+// 当前选中格式的点击顺序（决定文件名里的拼接顺序）
+const state = {
+  orders: {
+    twitterFormat: [...DEFAULT_TWITTER_FORMATS],
+    pixivFormat: [...DEFAULT_PIXIV_FORMATS]
   }
-  return '';
-}
+};
 
-// 获取当前语言标识，用于示例文件名文案
-function getCurrentLocale() {
-  const lang = (typeof chrome !== 'undefined' && chrome.i18n?.getUILanguage?.())
-    || (typeof navigator !== 'undefined' && (navigator.language || navigator.userLanguage))
-    || 'en';
-
-  if (lang.startsWith('ja')) return 'ja';
-  if (lang === 'zh-TW' || lang === 'zh_TW' || lang.startsWith('zh-Hant')) return 'zh_TW';
-  if (lang.startsWith('zh')) return 'zh_CN';
-  if (lang.startsWith('de')) return 'de';
-  if (lang.startsWith('ko')) return 'ko';
-  if (lang.startsWith('ru')) return 'ru';
-  if (lang.startsWith('cs')) return 'cs';
-  return 'en';
-}
-
-// 国际化函数：替换所有带有 data-i18n 属性的元素
+// 国际化：替换所有带有 data-i18n 属性的元素（仅替换叶子节点，保留 emoji 等兄弟内容）
 function applyI18n() {
   const elements = document.querySelectorAll('[data-i18n]');
   elements.forEach(element => {
-    const key = element.getAttribute('data-i18n');
-    const msg = t(key);
+    const msg = t(element.getAttribute('data-i18n'));
     if (msg) {
       element.textContent = msg;
     }
@@ -41,176 +46,154 @@ function applyI18n() {
 
   const titleElement = document.querySelector('title[data-i18n]');
   if (titleElement) {
-    const key = titleElement.getAttribute('data-i18n');
-    const msg = t(key);
+    const msg = t(titleElement.getAttribute('data-i18n'));
     if (msg) {
       document.title = msg;
     }
   }
+
+  const uiLang = typeof chrome !== 'undefined' && chrome.i18n?.getUILanguage?.();
+  if (uiLang) {
+    document.documentElement.lang = uiLang;
+  }
 }
 
-// 各语言的示例文件名片段
-const EXAMPLE_TEXTS = {
-  'en': {
-    'account': 'exampleUser_',
-    'tweetId': '88669977_',
-    'tweetTime': '20230810_',
-    'authorName': 'exampleAuthor_',
-    'authorId': '12345_',
-    'illustId': '88669977_',
-    'downloadDate': '20230811_'
-  },
-  'ja': {
-    'account': 'サンプルユーザー_',
-    'tweetId': '88669977_',
-    'tweetTime': '20230810_',
-    'authorName': 'サンプル作者_',
-    'authorId': '12345_',
-    'illustId': '88669977_',
-    'downloadDate': '20230811_'
-  },
-  'zh_CN': {
-    'account': '示例用户_',
-    'tweetId': '88669977_',
-    'tweetTime': '20230810_',
-    'authorName': '示例作者_',
-    'authorId': '12345_',
-    'illustId': '88669977_',
-    'downloadDate': '20230811_'
-  },
-  'zh_TW': {
-    'account': '範例使用者_',
-    'tweetId': '88669977_',
-    'tweetTime': '20230810_',
-    'authorName': '範例作者_',
-    'authorId': '12345_',
-    'illustId': '88669977_',
-    'downloadDate': '20230811_'
-  },
-  'de': {
-    'account': 'BeispielBenutzer_',
-    'tweetId': '88669977_',
-    'tweetTime': '20230810_',
-    'authorName': 'BeispielAutor_',
-    'authorId': '12345_',
-    'illustId': '88669977_',
-    'downloadDate': '20230811_'
-  },
-  'ko': {
-    'account': '예시사용자_',
-    'tweetId': '88669977_',
-    'tweetTime': '20230810_',
-    'authorName': '예시작가_',
-    'authorId': '12345_',
-    'illustId': '88669977_',
-    'downloadDate': '20230811_'
-  },
-  'ru': {
-    'account': 'ПримерПользователя_',
-    'tweetId': '88669977_',
-    'tweetTime': '20230810_',
-    'authorName': 'ПримерАвтора_',
-    'authorId': '12345_',
-    'illustId': '88669977_',
-    'downloadDate': '20230811_'
-  },
-  'cs': {
-    'account': 'PříkladUživatel_',
-    'tweetId': '88669977_',
-    'tweetTime': '20230810_',
-    'authorName': 'PříkladAutor_',
-    'authorId': '12345_',
-    'illustId': '88669977_',
-    'downloadDate': '20230811_'
+/* ---------- 轻量 toast（替代原全屏遮罩） ---------- */
+
+let toastTimer = null;
+
+function showToast(message) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = message;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1400);
+}
+
+/* ---------- 自动保存（防抖合并写入） ---------- */
+
+const pendingSaves = new Map();
+let saveTimer = null;
+
+function queueSave(entries) {
+  for (const [key, value] of Object.entries(entries)) {
+    pendingSaves.set(key, value);
   }
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushSaves, 200);
+}
+
+async function flushSaves() {
+  if (pendingSaves.size === 0) return;
+  const items = Object.fromEntries(pendingSaves);
+  pendingSaves.clear();
+  try {
+    await Storage.setSync(items);
+    showToast(t('savedToast', [], '设置已保存'));
+  } catch (error) {
+    showToast(String(error?.message || error));
+  }
+}
+
+/* ---------- 文件名格式选择（点击顺序 = 拼接顺序） ---------- */
+
+const STORAGE_KEYS = {
+  twitterFormat: 'twitterFilenameFormat',
+  pixivFormat: 'pixivFilenameFormat'
 };
 
-function getSelectedFormats(containerId) {
+function renderFormatSelection(containerId) {
   const container = document.getElementById(containerId);
-  if (!container) return [];
-  const selectedOptions = container.querySelectorAll('.format-option.selected');
-  return Array.from(selectedOptions).map(option => option.getAttribute('data-value'));
-}
+  if (!container) return;
+  const order = state.orders[containerId];
 
-function updateExample(containerId, exampleId) {
-  const formats = getSelectedFormats(containerId);
-  const locale = getCurrentLocale();
-  const texts = EXAMPLE_TEXTS[locale] || EXAMPLE_TEXTS['en'];
-  let exampleText = '';
-
-  formats.forEach(format => {
-    if (texts[format]) {
-      exampleText += texts[format];
+  container.querySelectorAll('.format-option').forEach(option => {
+    const value = option.getAttribute('data-value');
+    const index = order.indexOf(value);
+    option.classList.toggle('selected', index >= 0);
+    option.setAttribute('aria-pressed', index >= 0 ? 'true' : 'false');
+    if (index >= 0) {
+      option.setAttribute('data-pos', String(index + 1));
+    } else {
+      option.removeAttribute('data-pos');
     }
   });
-
-  const targetEl = document.getElementById(exampleId);
-  if (!targetEl) return;
-
-  if (exampleId === 'twitterVideoExample') {
-    exampleText = exampleText ? (exampleText.slice(0, -1) + '_1920x1080.mp4') : '1920x1080.mp4';
-  } else {
-    exampleText = exampleText ? (exampleText.slice(0, -1) + '.jpg') : 'example.jpg';
-  }
-
-  targetEl.textContent = exampleText;
 }
 
-function toggleSelection(containerId, exampleId, videoExampleId = null) {
+function formatDate(d) {
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function updateExamples(containerId) {
+  const order = state.orders[containerId];
+  const platform = containerId === 'twitterFormat' ? 'twitter' : 'pixiv';
+
+  let base = '';
+  for (const format of order) {
+    base += t(FORMAT_PART_KEYS[format], [], FORMAT_PART_FALLBACKS[format] || '');
+  }
+
+  // 未选任何格式时与后端 FilenameGenerator 的兜底保持一致：平台名_日期
+  if (!base) {
+    base = `${platform}_${formatDate(new Date())}_`;
+  }
+
+  const imageEl = document.getElementById(containerId === 'twitterFormat' ? 'twitterExample' : 'pixivExample');
+  if (imageEl) imageEl.textContent = `${base.slice(0, -1)}.jpg`;
+
+  if (containerId === 'twitterFormat') {
+    const videoEl = document.getElementById('twitterVideoExample');
+    if (videoEl) videoEl.textContent = `${base.slice(0, -1)}_1920x1080.mp4`;
+  }
+}
+
+function bindFormatSelection(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
   container.addEventListener('click', event => {
     const option = event.target.closest('.format-option');
-    if (option) {
-      option.classList.toggle('selected');
-      updateExample(containerId, exampleId);
-      if (videoExampleId) {
-        updateExample(containerId, videoExampleId);
-      }
+    if (!option) return;
+
+    const value = option.getAttribute('data-value');
+    const order = state.orders[containerId];
+    const index = order.indexOf(value);
+    if (index >= 0) {
+      order.splice(index, 1);
+    } else {
+      order.push(value);
     }
+
+    renderFormatSelection(containerId);
+    updateExamples(containerId);
+    queueSave({ [STORAGE_KEYS[containerId]]: [...order] });
   });
 }
 
-function showSuccessMessage() {
-  const successMessage = document.getElementById('successMessage');
-  if (!successMessage) return;
-  successMessage.style.display = 'flex';
-  setTimeout(() => {
-    successMessage.style.display = 'none';
-  }, 2000);
+/* ---------- 开关（变更即保存） ---------- */
+
+function bindSwitch(id, storageKey) {
+  const input = document.getElementById(id);
+  if (!input) return;
+  input.addEventListener('change', () => queueSave({ [storageKey]: input.checked }));
 }
 
-function initSelection(containerId, storedFormats) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  storedFormats.forEach(format => {
-    const option = container.querySelector(`[data-value="${format}"]`);
-    if (option) {
-      option.classList.add('selected');
-    }
-  });
-
-  if (containerId === 'twitterFormat') {
-    updateExample(containerId, 'twitterExample');
-    updateExample(containerId, 'twitterVideoExample');
-  } else {
-    const exampleId = containerId === 'pixivFormat' ? 'pixivExample' : 'twitterExample';
-    updateExample(containerId, exampleId);
-  }
-}
+/* ---------- 标签页 ---------- */
 
 function bindTabs() {
   const tabs = document.querySelectorAll('.tab');
-  const contents = document.querySelectorAll('.tab-content');
 
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
-      tabs.forEach(btn => btn.classList.remove('active'));
-      contents.forEach(content => content.classList.remove('active'));
+      tabs.forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      });
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
       tab.classList.add('active');
-      const targetId = `${tab.dataset.tab}-tab`;
-      const targetContent = document.getElementById(targetId);
+      tab.setAttribute('aria-selected', 'true');
+      const targetContent = document.getElementById(`${tab.dataset.tab}-tab`);
       if (targetContent) {
         targetContent.classList.add('active');
       }
@@ -218,7 +201,8 @@ function bindTabs() {
   });
 }
 
-// 日志相关函数
+/* ---------- 日志 ---------- */
+
 async function loadLogs() {
   const platformEl = document.getElementById('logPlatform');
   if (!platformEl) return;
@@ -231,26 +215,48 @@ async function loadLogs() {
 
   const logList = document.getElementById('logList');
   if (!logList) return;
-  logList.innerHTML = '';
+  logList.replaceChildren();
 
   if (filteredLogs.length === 0) {
-    const emptyMsg = t('noLogs') || '暂无错误日志';
-    logList.innerHTML = `<div class="empty-state">${emptyMsg}</div>`;
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = t('noLogs', [], '暂无错误日志');
+    logList.appendChild(empty);
     return;
   }
 
+  // 日志内容可能来自网络响应，全部用 textContent 渲染，避免注入
   filteredLogs.forEach(log => {
     const item = document.createElement('div');
     item.className = 'log-item';
-    item.innerHTML = `
-      <div class="log-header">
-        <span class="log-platform">${log.platform}</span>
-        <span class="log-time">${new Date(log.timestamp).toLocaleString()}</span>
-      </div>
-      <div class="log-action">${log.action}</div>
-      <div class="log-error">${log.error}</div>
-      ${log.url ? `<div class="log-url">${log.url.substring(0, 50)}...</div>` : ''}
-    `;
+
+    const header = document.createElement('div');
+    header.className = 'log-header';
+    const platformSpan = document.createElement('span');
+    platformSpan.textContent = log.platform || '-';
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'log-time';
+    timeSpan.textContent = log.timestamp ? new Date(log.timestamp).toLocaleString() : '';
+    header.append(platformSpan, timeSpan);
+
+    const action = document.createElement('div');
+    action.className = 'log-action';
+    action.textContent = log.action || '';
+
+    const error = document.createElement('div');
+    error.className = 'log-error';
+    error.textContent = log.error || '';
+
+    item.append(header, action, error);
+
+    if (log.url) {
+      const url = document.createElement('div');
+      url.className = 'log-url';
+      url.textContent = log.url.length > 120 ? `${log.url.slice(0, 120)}…` : log.url;
+      url.title = log.url;
+      item.appendChild(url);
+    }
+
     logList.appendChild(item);
   });
 }
@@ -258,11 +264,12 @@ async function loadLogs() {
 async function exportLogs() {
   const { errorLogs = [] } = await Storage.getLocal('errorLogs');
   if (errorLogs.length === 0) {
-    alert(t('noLogsToExport') || '暂无日志可导出');
+    showToast(t('noLogsToExport', [], '暂无日志可导出'));
     return;
   }
 
-  const content = errorLogs.map(log => JSON.stringify(log, null, 2)).join('\n');
+  // 导出为合法的 JSON 数组，便于 json.tool / jq 等工具直接解析
+  const content = JSON.stringify(errorLogs, null, 2);
   const blob = new Blob([content], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -270,47 +277,48 @@ async function exportLogs() {
   a.download = `error-logs-${new Date().toISOString().split('T')[0]}.json`;
   a.click();
   URL.revokeObjectURL(url);
+  showToast(t('logsExportedToast', [], '日志已导出'));
 }
 
-// 保存设置
-const saveButton = document.getElementById('saveButton');
-if (saveButton) {
-  saveButton.addEventListener('click', async () => {
-    const twitterFormats = getSelectedFormats('twitterFormat');
-    const pixivFormats = getSelectedFormats('pixivFormat');
-    const twitterSwitchState = document.getElementById('twitterSwitch')?.checked ?? true;
-    const pixivSwitchState = document.getElementById('pixivSwitch')?.checked ?? true;
-    const notificationsEnabled = document.getElementById('notificationSwitch')?.checked ?? true;
+/* ---------- 恢复默认 ---------- */
 
-    await Storage.setSync({
-      twitterFilenameFormat: twitterFormats,
-      pixivFilenameFormat: pixivFormats,
-      twitterSwitchActive: twitterSwitchState,
-      pixivSwitchActive: pixivSwitchState,
-      notificationsEnabled
+function bindReset() {
+  const resetButton = document.getElementById('resetButton');
+  if (!resetButton) return;
+  resetButton.addEventListener('click', () => {
+    state.orders.twitterFormat = [...DEFAULT_TWITTER_FORMATS];
+    state.orders.pixivFormat = [...DEFAULT_PIXIV_FORMATS];
+
+    renderFormatSelection('twitterFormat');
+    renderFormatSelection('pixivFormat');
+    updateExamples('twitterFormat');
+    updateExamples('pixivFormat');
+
+    const switches = { twitterSwitch: true, pixivSwitch: true, notificationSwitch: true };
+    for (const [id, value] of Object.entries(switches)) {
+      const input = document.getElementById(id);
+      if (input) input.checked = value;
+    }
+
+    queueSave({
+      twitterFilenameFormat: [...DEFAULT_TWITTER_FORMATS],
+      pixivFilenameFormat: [...DEFAULT_PIXIV_FORMATS],
+      twitterSwitchActive: true,
+      pixivSwitchActive: true,
+      notificationsEnabled: true
     });
-    showSuccessMessage();
   });
 }
 
-// 日志事件监听
-const logPlatform = document.getElementById('logPlatform');
-if (logPlatform) logPlatform.addEventListener('change', loadLogs);
+/* ---------- 初始化 ---------- */
 
-const clearLogs = document.getElementById('clearLogs');
-if (clearLogs) {
-  clearLogs.addEventListener('click', async () => {
-    await Storage.setLocal({ errorLogs: [] });
-    loadLogs();
-  });
-}
-
-const exportLogsBtn = document.getElementById('exportLogs');
-if (exportLogsBtn) exportLogsBtn.addEventListener('click', exportLogs);
-
-// 初始化
 async function init() {
   applyI18n();
+
+  const versionLabel = document.getElementById('versionLabel');
+  if (versionLabel && typeof chrome !== 'undefined' && chrome.runtime?.getManifest) {
+    versionLabel.textContent = `v${chrome.runtime.getManifest().version}`;
+  }
 
   const result = await Storage.getSync([
     'twitterFilenameFormat',
@@ -320,26 +328,54 @@ async function init() {
     'notificationsEnabled'
   ]);
 
-  const twitterFormats = result.twitterFilenameFormat || DEFAULT_TWITTER_FORMATS;
-  const pixivFormats = result.pixivFilenameFormat || DEFAULT_PIXIV_FORMATS;
-  const twitterSwitch = typeof result.twitterSwitchActive === 'undefined' ? true : result.twitterSwitchActive;
-  const pixivSwitch = typeof result.pixivSwitchActive === 'undefined' ? true : result.pixivSwitchActive;
-  const notificationsEnabled = typeof result.notificationsEnabled === 'undefined' ? true : result.notificationsEnabled;
+  state.orders.twitterFormat = Array.isArray(result.twitterFilenameFormat) && result.twitterFilenameFormat.length > 0
+    ? [...result.twitterFilenameFormat]
+    : [...DEFAULT_TWITTER_FORMATS];
+  state.orders.pixivFormat = Array.isArray(result.pixivFilenameFormat) && result.pixivFilenameFormat.length > 0
+    ? [...result.pixivFilenameFormat]
+    : [...DEFAULT_PIXIV_FORMATS];
 
-  initSelection('twitterFormat', twitterFormats);
-  initSelection('pixivFormat', pixivFormats);
+  renderFormatSelection('twitterFormat');
+  renderFormatSelection('pixivFormat');
+  updateExamples('twitterFormat');
+  updateExamples('pixivFormat');
 
-  toggleSelection('twitterFormat', 'twitterExample', 'twitterVideoExample');
-  toggleSelection('pixivFormat', 'pixivExample');
+  const twitterSwitch = document.getElementById('twitterSwitch');
+  if (twitterSwitch) {
+    twitterSwitch.checked = typeof result.twitterSwitchActive === 'undefined' ? true : result.twitterSwitchActive;
+  }
+  const pixivSwitch = document.getElementById('pixivSwitch');
+  if (pixivSwitch) {
+    pixivSwitch.checked = typeof result.pixivSwitchActive === 'undefined' ? true : result.pixivSwitchActive;
+  }
+  const notificationSwitch = document.getElementById('notificationSwitch');
+  if (notificationSwitch) {
+    notificationSwitch.checked = typeof result.notificationsEnabled === 'undefined' ? true : result.notificationsEnabled;
+  }
 
-  const twSwitch = document.getElementById('twitterSwitch');
-  if (twSwitch) twSwitch.checked = twitterSwitch;
-  const pxSwitch = document.getElementById('pixivSwitch');
-  if (pxSwitch) pxSwitch.checked = pixivSwitch;
-  const notifSwitch = document.getElementById('notificationSwitch');
-  if (notifSwitch) notifSwitch.checked = notificationsEnabled;
-
+  bindFormatSelection('twitterFormat');
+  bindFormatSelection('pixivFormat');
+  bindSwitch('twitterSwitch', 'twitterSwitchActive');
+  bindSwitch('pixivSwitch', 'pixivSwitchActive');
+  bindSwitch('notificationSwitch', 'notificationsEnabled');
+  bindReset();
   bindTabs();
+
+  const logPlatform = document.getElementById('logPlatform');
+  if (logPlatform) logPlatform.addEventListener('change', loadLogs);
+
+  const clearLogs = document.getElementById('clearLogs');
+  if (clearLogs) {
+    clearLogs.addEventListener('click', async () => {
+      if (!confirm(t('clearLogsConfirm', [], '确定清空所有日志？'))) return;
+      await Storage.setLocal({ errorLogs: [] });
+      loadLogs();
+    });
+  }
+
+  const exportLogsBtn = document.getElementById('exportLogs');
+  if (exportLogsBtn) exportLogsBtn.addEventListener('click', exportLogs);
+
   await loadLogs();
 }
 

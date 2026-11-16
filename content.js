@@ -21,12 +21,7 @@
     pixivSwitchActive: true,
     notificationsEnabled: true,
     twitterFilenameFormat: ["account", "tweetId"],
-    pixivFilenameFormat: ["authorName", "illustId"],
-    pixivProxies: [],
-    activeProxyId: null,
-    autoSwitchProxy: true,
-    roundRobinProxy: false,
-    proxyTestUrl: "https://www.pixiv.net/artworks/119870733"
+    pixivFilenameFormat: ["authorName", "illustId"]
   };
   var ConfigManager = class {
     async getSwitches() {
@@ -46,22 +41,6 @@
     async getNotificationSetting() {
       const result = await Storage.getSync("notificationsEnabled");
       return typeof result.notificationsEnabled === "undefined" ? DEFAULTS.notificationsEnabled : result.notificationsEnabled;
-    }
-    async getProxySettings() {
-      const result = await Storage.getSync([
-        "pixivProxies",
-        "activeProxyId",
-        "autoSwitchProxy",
-        "roundRobinProxy",
-        "proxyTestUrl"
-      ]);
-      return {
-        pixivProxies: result.pixivProxies || DEFAULTS.pixivProxies,
-        activeProxyId: result.activeProxyId || DEFAULTS.activeProxyId,
-        autoSwitchProxy: typeof result.autoSwitchProxy === "undefined" ? DEFAULTS.autoSwitchProxy : result.autoSwitchProxy,
-        roundRobinProxy: typeof result.roundRobinProxy === "undefined" ? DEFAULTS.roundRobinProxy : result.roundRobinProxy,
-        proxyTestUrl: result.proxyTestUrl || DEFAULTS.proxyTestUrl
-      };
     }
     async setSettings(settings) {
       await Storage.setSync(settings);
@@ -251,6 +230,15 @@
         retryCount: context?.retryCount || 0,
         success: false
       });
+    }
+    // 批量下载进度上报：单项完成（无论成败）后调用，由 background 聚合展示
+    sendBatchProgress(batchKey, current, total) {
+      if (!total || total <= 1)
+        return;
+      try {
+        chrome.runtime.sendMessage({ action: "downloadProgress", batchKey, current, total });
+      } catch (e) {
+      }
     }
   };
 
@@ -511,7 +499,35 @@
     }
   }
 
+  // src/utils/concurrency.js
+  async function mapLimit(items, limit, worker) {
+    const results = new Array(items.length);
+    let nextIndex = 0;
+    const actualLimit = Math.max(1, Math.min(limit, items.length));
+    async function runner() {
+      while (nextIndex < items.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        results[index] = await worker(items[index], index);
+      }
+    }
+    await Promise.all(Array.from({ length: actualLimit }, () => runner()));
+    return results;
+  }
+
+  // src/utils/i18n.js
+  function t(key, substitutions = [], fallback = "") {
+    try {
+      const msg = chrome.i18n.getMessage(key, substitutions);
+      if (msg)
+        return msg;
+    } catch (e) {
+    }
+    return fallback;
+  }
+
   // src/platforms/twitter/twitter-platform.js
+  var DOWNLOAD_CONCURRENCY = 3;
   var tweetVideoCache = /* @__PURE__ */ new Map();
   function cacheVideoData(videoData) {
     if (videoData && videoData.tweetId && typeof videoData.videoUrl === "string" && videoData.videoUrl.startsWith("https://video.twimg.com/")) {
@@ -548,8 +564,8 @@
         return false;
       const { authorId, tweetId, tweetTime } = extractTweetMetadata(tweetContainer);
       const images = extractTweetImages(tweetContainer);
-      for (let i = 0; i < images.length; i += 1) {
-        const img = images[i];
+      let completedImages = 0;
+      await mapLimit(images, DOWNLOAD_CONCURRENCY, async (img, i) => {
         const imgUrl = new URL(img.src);
         imgUrl.searchParams.set("name", "orig");
         try {
@@ -562,8 +578,11 @@
           });
         } catch (error) {
           await this.handleError(error, { action: "downloadImage", url: imgUrl.toString() });
+        } finally {
+          completedImages += 1;
+          this.sendBatchProgress(`twitter:${tweetId}`, completedImages, images.length);
         }
-      }
+      });
       const videoComponents = extractTweetVideoComponents(tweetContainer);
       for (const videoComponent of videoComponents) {
         const video = videoComponent.tagName === "VIDEO" ? videoComponent : videoComponent.querySelector("video");
@@ -622,8 +641,8 @@
             chrome.runtime.sendMessage({
               action: "notify",
               level: "warning",
-              title: "\u4E0B\u8F7D\u91CD\u8BD5\u4E2D",
-              message: "Twitter\u56FE\u7247\u6B63\u5728\u91CD\u8BD5..."
+              title: t("notifRetryTitle", [], "\u4E0B\u8F7D\u91CD\u8BD5\u4E2D"),
+              message: t("notifRetryTwitter", [], "Twitter \u56FE\u7247\u6B63\u5728\u91CD\u8BD5\u2026")
             });
           }
         }
@@ -957,7 +976,7 @@
       pageCount: body.pageCount,
       // 单图作品 body.urls.original 直接就是原图
       originalUrl: body.urls?.original || null,
-      tags: Array.isArray(body.tags?.tags) ? body.tags.tags.map((t) => t.tag) : []
+      tags: Array.isArray(body.tags?.tags) ? body.tags.tags.map((t2) => t2.tag) : []
     };
   }
   async function fetchIllustPages(illustId) {
@@ -973,6 +992,7 @@
   }
 
   // src/platforms/pixiv/pixiv-platform.js
+  var DOWNLOAD_CONCURRENCY2 = 3;
   var ILLUST_ID_RE = /\/artworks\/(\d+)/;
   var DEBUG = false;
   function extractIllustId(target, metadata) {
@@ -1057,19 +1077,22 @@
         illustId: String(meta.illustId || illustId),
         pageTotal: pages.length
       };
-      for (let i = 0; i < pages.length; i += 1) {
-        const originalUrl = pages[i].urls?.original;
-        if (!originalUrl)
-          continue;
-        try {
-          await this.downloadWithFallback(originalUrl, {
-            ...fileMeta,
-            pageIndex: i + 1
-          });
-        } catch (error) {
-          await this.handleError(error, { action: "downloadImage", url: originalUrl });
+      let completedPages = 0;
+      await mapLimit(pages, DOWNLOAD_CONCURRENCY2, async (page, i) => {
+        const originalUrl = page.urls?.original;
+        if (originalUrl) {
+          try {
+            await this.downloadWithFallback(originalUrl, {
+              ...fileMeta,
+              pageIndex: i + 1
+            });
+          } catch (error) {
+            await this.handleError(error, { action: "downloadImage", url: originalUrl });
+          }
         }
-      }
+        completedPages += 1;
+        this.sendBatchProgress(`pixiv:${fileMeta.illustId}`, completedPages, pages.length);
+      });
       return true;
     }
     // 图片下载走反代优先：i.pximg.net 有防盗链（校验 Referer），
@@ -1123,8 +1146,8 @@
             chrome.runtime.sendMessage({
               action: "notify",
               level: "warning",
-              title: "\u4E0B\u8F7D\u91CD\u8BD5\u4E2D",
-              message: "Pixiv\u56FE\u7247\u6B63\u5728\u91CD\u8BD5..."
+              title: t("notifRetryTitle", [], "\u4E0B\u8F7D\u91CD\u8BD5\u4E2D"),
+              message: t("notifRetryPixiv", [], "Pixiv \u56FE\u7247\u6B63\u5728\u91CD\u8BD5\u2026")
             });
           }
         }

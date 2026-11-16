@@ -1,118 +1,221 @@
 {
-  "extensionName": {
-    "message": "Twitter & Pixiv 원본 이미지 다운로드",
-    "description": "Name of the extension"
-  },
-  "extensionDescription": {
-    "message": "Twitter와 Pixiv에서 좋아요/북마크 시 원본 이미지를 다운로드합니다. 기본 파일명: 작성자+게시물 ID+시간",
-    "description": "Description of the extension"
-  },
-  "popupTitle": {
-    "message": "파일명 형식 설정",
-    "description": "Title of the popup settings page"
-  },
-  "twitterLabel": {
-    "message": "Twitter",
-    "description": "Label for Twitter switch"
-  },
-  "pixivLabel": {
-    "message": "Pixiv",
-    "description": "Label for Pixiv switch"
-  },
-  "twitterFormatTitle": {
-    "message": "Twitter 파일명 형식",
-    "description": "Title for Twitter format section"
-  },
-  "pixivFormatTitle": {
-    "message": "Pixiv 파일명 형식",
-    "description": "Title for Pixiv format section"
-  },
-  "formatAccount": {
-    "message": "계정",
-    "description": "Format option for account name"
-  },
-  "formatTweetId": {
-    "message": "트윗 ID",
-    "description": "Format option for tweet ID"
-  },
-  "formatTweetTime": {
-    "message": "트윗 시간",
-    "description": "Format option for tweet time"
-  },
-  "formatDownloadDate": {
-    "message": "다운로드 날짜",
-    "description": "Format option for download date"
-  },
-  "formatAuthorName": {
-    "message": "작가명",
-    "description": "Format option for author name"
-  },
-  "formatAuthorId": {
-    "message": "작가 ID",
-    "description": "Format option for author ID"
-  },
-  "formatIllustId": {
-    "message": "일러스트 ID",
-    "description": "Format option for illustration ID"
-  },
-  "exampleTwitterImage": {
-    "message": "Twitter 이미지 예시",
-    "description": "Example title for Twitter images"
-  },
-  "exampleTwitterVideo": {
-    "message": "Twitter 비디오 예시",
-    "description": "Example title for Twitter videos"
-  },
-  "examplePixiv": {
-    "message": "Pixiv 파일명 예시",
-    "description": "Example title for Pixiv files"
-  },
-  "saveButton": {
-    "message": "설정 저장",
-    "description": "Save button text"
-  },
-  "saveSuccess": {
-    "message": "성공적으로 저장되었습니다!",
-    "description": "Success message"
-  },
-  "settingsUpdated": {
-    "message": "설정이 업데이트되었습니다",
-    "description": "Settings updated message"
-  },
-  "tabSettings": {
-    "message": "설정",
-    "description": "Settings tab label"
-  },
-  "tabLogs": {
-    "message": "로그",
-    "description": "Logs tab label"
-  },
-  "notificationLabel": {
-    "message": "알림",
-    "description": "Label for notification switch"
-  },
-  "errorLogTitle": {
-    "message": "오류 로그",
-    "description": "Title for error logs section"
-  },
-  "logFilterAll": {
-    "message": "모든 플랫폼",
-    "description": "Log filter option for all platforms"
-  },
-  "clearLogs": {
-    "message": "로그 지우기",
-    "description": "Clear logs button text"
-  },
-  "exportLogs": {
-    "message": "로그 내보내기",
-    "description": "Export logs button text"
-  },
-  "noLogs": {
-    "message": "오류 로그 없음",
-    "description": "Empty state text when no error logs"
-  },
-  "noLogsToExport": {
-    "message": "내보낼 로그가 없습니다",
-    "description": "Alert message when there are no logs to export"
-  }
+    "extensionName": {
+        "message": "Twitter & Pixiv 원본 이미지 다운로드",
+        "description": "Name of the extension"
+    },
+    "extensionDescription": {
+        "message": "Twitter와 Pixiv에서 좋아요/북마크 시 원본 이미지를 다운로드합니다. 기본 파일명: 작성자+게시물 ID+시간",
+        "description": "Description of the extension"
+    },
+    "popupTitle": {
+        "message": "다운로드 설정"
+    },
+    "twitterLabel": {
+        "message": "Twitter",
+        "description": "Label for Twitter switch"
+    },
+    "pixivLabel": {
+        "message": "Pixiv",
+        "description": "Label for Pixiv switch"
+    },
+    "twitterFormatTitle": {
+        "message": "Twitter 파일명 형식",
+        "description": "Title for Twitter format section"
+    },
+    "pixivFormatTitle": {
+        "message": "Pixiv 파일명 형식",
+        "description": "Title for Pixiv format section"
+    },
+    "formatAccount": {
+        "message": "계정",
+        "description": "Format option for account name"
+    },
+    "formatTweetId": {
+        "message": "트윗 ID",
+        "description": "Format option for tweet ID"
+    },
+    "formatTweetTime": {
+        "message": "트윗 시간",
+        "description": "Format option for tweet time"
+    },
+    "formatDownloadDate": {
+        "message": "다운로드 날짜",
+        "description": "Format option for download date"
+    },
+    "formatAuthorName": {
+        "message": "작가명",
+        "description": "Format option for author name"
+    },
+    "formatAuthorId": {
+        "message": "작가 ID",
+        "description": "Format option for author ID"
+    },
+    "formatIllustId": {
+        "message": "일러스트 ID",
+        "description": "Format option for illustration ID"
+    },
+    "exampleTwitterImage": {
+        "message": "Twitter 이미지 예시",
+        "description": "Example title for Twitter images"
+    },
+    "exampleTwitterVideo": {
+        "message": "Twitter 비디오 예시",
+        "description": "Example title for Twitter videos"
+    },
+    "examplePixiv": {
+        "message": "Pixiv 파일명 예시",
+        "description": "Example title for Pixiv files"
+    },
+    "tabSettings": {
+        "message": "설정",
+        "description": "Settings tab label"
+    },
+    "tabLogs": {
+        "message": "로그",
+        "description": "Logs tab label"
+    },
+    "notificationLabel": {
+        "message": "알림",
+        "description": "Label for notification switch"
+    },
+    "errorLogTitle": {
+        "message": "오류 로그",
+        "description": "Title for error logs section"
+    },
+    "logFilterAll": {
+        "message": "모든 플랫폼",
+        "description": "Log filter option for all platforms"
+    },
+    "clearLogs": {
+        "message": "로그 지우기",
+        "description": "Clear logs button text"
+    },
+    "exportLogs": {
+        "message": "로그 내보내기",
+        "description": "Export logs button text"
+    },
+    "noLogs": {
+        "message": "오류 로그 없음",
+        "description": "Empty state text when no error logs"
+    },
+    "noLogsToExport": {
+        "message": "내보낼 로그가 없습니다",
+        "description": "Alert message when there are no logs to export"
+    },
+    "sectionPlatforms": {
+        "message": "플랫폼"
+    },
+    "sectionGeneral": {
+        "message": "일반"
+    },
+    "autoSaveHint": {
+        "message": "변경 사항은 즉시 적용되며 자동 저장됩니다"
+    },
+    "resetButton": {
+        "message": "기본값으로 재설정"
+    },
+    "savedToast": {
+        "message": "설정이 저장되었습니다"
+    },
+    "exampleMultiPageNote": {
+        "message": "여러 이미지 작품에는 자동으로 _p01 페이지 접미사가 추가됩니다"
+    },
+    "clearLogsConfirm": {
+        "message": "모든 로그를 삭제하시겠습니까?"
+    },
+    "logsExportedToast": {
+        "message": "로그를 내보냈습니다"
+    },
+    "examplePartAccount": {
+        "message": "예시사용자_"
+    },
+    "examplePartTweetId": {
+        "message": "88669977_"
+    },
+    "examplePartTweetTime": {
+        "message": "20230810_"
+    },
+    "examplePartAuthorName": {
+        "message": "예시작가_"
+    },
+    "examplePartAuthorId": {
+        "message": "12345_"
+    },
+    "examplePartIllustId": {
+        "message": "88669977_"
+    },
+    "examplePartDownloadDate": {
+        "message": "20230811_"
+    },
+    "notifQueuedTitle": {
+        "message": "다운로드 시작"
+    },
+    "notifQueuedImage": {
+        "message": "이미지가 다운로드 대기열에 추가되었습니다"
+    },
+    "notifQueuedVideo": {
+        "message": "동영상이 다운로드 대기열에 추가되었습니다"
+    },
+    "notifRetryTitle": {
+        "message": "다운로드 재시도 중"
+    },
+    "notifRetryGeneric": {
+        "message": "네트워크 문제로 실패했습니다. 다시 시도하는 중…"
+    },
+    "notifRetryTwitter": {
+        "message": "Twitter 이미지를 다시 시도하는 중…"
+    },
+    "notifRetryPixiv": {
+        "message": "Pixiv 이미지를 다시 시도하는 중…"
+    },
+    "notifFailedTitle": {
+        "message": "다운로드 실패"
+    },
+    "notifFailedMessage": {
+        "message": "다운로드 실패: $ERROR$",
+        "placeholders": {
+            "error": {
+                "content": "$1"
+            }
+        }
+    },
+    "notifBatchTitle": {
+        "message": "일괄 다운로드 중"
+    },
+    "notifBatchProgress": {
+        "message": "완료 $CURRENT$/$TOTAL$",
+        "placeholders": {
+            "current": {
+                "content": "$1"
+            },
+            "total": {
+                "content": "$2"
+            }
+        }
+    },
+    "notifBatchDoneTitle": {
+        "message": "일괄 다운로드 완료"
+    },
+    "notifBatchDoneMessage": {
+        "message": "총 $COUNT$개 파일이 대기열에 추가되었습니다",
+        "placeholders": {
+            "count": {
+                "content": "$1"
+            }
+        }
+    },
+    "notifInterruptedTitle": {
+        "message": "다운로드가 중단되었습니다"
+    },
+    "notifInterruptedMessage": {
+        "message": "$FILE$: $ERROR$",
+        "placeholders": {
+            "file": {
+                "content": "$1"
+            },
+            "error": {
+                "content": "$2"
+            }
+        }
+    }
 }

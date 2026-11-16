@@ -1,118 +1,221 @@
 {
-  "extensionName": {
-    "message": "Twitter & Pixivのオリジナル画像をダウンロード",
-    "description": "Name of the extension"
-  },
-  "extensionDescription": {
-    "message": "TwitterとPixivでいいね/ブックマークした際にオリジナル画像をダウンロードします。デフォルトのファイル名：作成者+投稿ID+時間",
-    "description": "Description of the extension"
-  },
-  "popupTitle": {
-    "message": "ファイル名形式の設定",
-    "description": "Title of the popup settings page"
-  },
-  "twitterLabel": {
-    "message": "Twitter",
-    "description": "Label for Twitter switch"
-  },
-  "pixivLabel": {
-    "message": "Pixiv",
-    "description": "Label for Pixiv switch"
-  },
-  "twitterFormatTitle": {
-    "message": "Twitterファイル名形式",
-    "description": "Title for Twitter format section"
-  },
-  "pixivFormatTitle": {
-    "message": "Pixivファイル名形式",
-    "description": "Title for Pixiv format section"
-  },
-  "formatAccount": {
-    "message": "アカウント",
-    "description": "Format option for account name"
-  },
-  "formatTweetId": {
-    "message": "ツイートID",
-    "description": "Format option for tweet ID"
-  },
-  "formatTweetTime": {
-    "message": "ツイート時間",
-    "description": "Format option for tweet time"
-  },
-  "formatDownloadDate": {
-    "message": "ダウンロード日時",
-    "description": "Format option for download date"
-  },
-  "formatAuthorName": {
-    "message": "作者名",
-    "description": "Format option for author name"
-  },
-  "formatAuthorId": {
-    "message": "作者ID",
-    "description": "Format option for author ID"
-  },
-  "formatIllustId": {
-    "message": "イラストID",
-    "description": "Format option for illustration ID"
-  },
-  "exampleTwitterImage": {
-    "message": "Twitter画像例",
-    "description": "Example title for Twitter images"
-  },
-  "exampleTwitterVideo": {
-    "message": "Twitter動画例",
-    "description": "Example title for Twitter videos"
-  },
-  "examplePixiv": {
-    "message": "Pixivファイル名例",
-    "description": "Example title for Pixiv files"
-  },
-  "saveButton": {
-    "message": "設定を保存",
-    "description": "Save button text"
-  },
-  "saveSuccess": {
-    "message": "正常に保存されました！",
-    "description": "Success message"
-  },
-  "settingsUpdated": {
-    "message": "設定を更新しました",
-    "description": "Settings updated message"
-  },
-  "tabSettings": {
-    "message": "設定",
-    "description": "Settings tab label"
-  },
-  "tabLogs": {
-    "message": "ログ",
-    "description": "Logs tab label"
-  },
-  "notificationLabel": {
-    "message": "通知",
-    "description": "Label for notification switch"
-  },
-  "errorLogTitle": {
-    "message": "エラーログ",
-    "description": "Title for error logs section"
-  },
-  "logFilterAll": {
-    "message": "すべてのプラットフォーム",
-    "description": "Log filter option for all platforms"
-  },
-  "clearLogs": {
-    "message": "ログを消去",
-    "description": "Clear logs button text"
-  },
-  "exportLogs": {
-    "message": "ログをエクスポート",
-    "description": "Export logs button text"
-  },
-  "noLogs": {
-    "message": "エラーログはありません",
-    "description": "Empty state text when no error logs"
-  },
-  "noLogsToExport": {
-    "message": "エクスポートするログはありません",
-    "description": "Alert message when there are no logs to export"
-  }
+    "extensionName": {
+        "message": "Twitter & Pixivのオリジナル画像をダウンロード",
+        "description": "Name of the extension"
+    },
+    "extensionDescription": {
+        "message": "TwitterとPixivでいいね/ブックマークした際にオリジナル画像をダウンロードします。デフォルトのファイル名：作成者+投稿ID+時間",
+        "description": "Description of the extension"
+    },
+    "popupTitle": {
+        "message": "ダウンロード設定"
+    },
+    "twitterLabel": {
+        "message": "Twitter",
+        "description": "Label for Twitter switch"
+    },
+    "pixivLabel": {
+        "message": "Pixiv",
+        "description": "Label for Pixiv switch"
+    },
+    "twitterFormatTitle": {
+        "message": "Twitterファイル名形式",
+        "description": "Title for Twitter format section"
+    },
+    "pixivFormatTitle": {
+        "message": "Pixivファイル名形式",
+        "description": "Title for Pixiv format section"
+    },
+    "formatAccount": {
+        "message": "アカウント",
+        "description": "Format option for account name"
+    },
+    "formatTweetId": {
+        "message": "ツイートID",
+        "description": "Format option for tweet ID"
+    },
+    "formatTweetTime": {
+        "message": "ツイート時間",
+        "description": "Format option for tweet time"
+    },
+    "formatDownloadDate": {
+        "message": "ダウンロード日時",
+        "description": "Format option for download date"
+    },
+    "formatAuthorName": {
+        "message": "作者名",
+        "description": "Format option for author name"
+    },
+    "formatAuthorId": {
+        "message": "作者ID",
+        "description": "Format option for author ID"
+    },
+    "formatIllustId": {
+        "message": "イラストID",
+        "description": "Format option for illustration ID"
+    },
+    "exampleTwitterImage": {
+        "message": "Twitter画像例",
+        "description": "Example title for Twitter images"
+    },
+    "exampleTwitterVideo": {
+        "message": "Twitter動画例",
+        "description": "Example title for Twitter videos"
+    },
+    "examplePixiv": {
+        "message": "Pixivファイル名例",
+        "description": "Example title for Pixiv files"
+    },
+    "tabSettings": {
+        "message": "設定",
+        "description": "Settings tab label"
+    },
+    "tabLogs": {
+        "message": "ログ",
+        "description": "Logs tab label"
+    },
+    "notificationLabel": {
+        "message": "通知",
+        "description": "Label for notification switch"
+    },
+    "errorLogTitle": {
+        "message": "エラーログ",
+        "description": "Title for error logs section"
+    },
+    "logFilterAll": {
+        "message": "すべてのプラットフォーム",
+        "description": "Log filter option for all platforms"
+    },
+    "clearLogs": {
+        "message": "ログを消去",
+        "description": "Clear logs button text"
+    },
+    "exportLogs": {
+        "message": "ログをエクスポート",
+        "description": "Export logs button text"
+    },
+    "noLogs": {
+        "message": "エラーログはありません",
+        "description": "Empty state text when no error logs"
+    },
+    "noLogsToExport": {
+        "message": "エクスポートするログはありません",
+        "description": "Alert message when there are no logs to export"
+    },
+    "sectionPlatforms": {
+        "message": "プラットフォーム"
+    },
+    "sectionGeneral": {
+        "message": "全般"
+    },
+    "autoSaveHint": {
+        "message": "変更はすぐに反映され、自動保存されます"
+    },
+    "resetButton": {
+        "message": "初期設定に戻す"
+    },
+    "savedToast": {
+        "message": "設定を保存しました"
+    },
+    "exampleMultiPageNote": {
+        "message": "複数画像には自動的に _p01 ページ番号が付きます"
+    },
+    "clearLogsConfirm": {
+        "message": "すべてのログを消去しますか？"
+    },
+    "logsExportedToast": {
+        "message": "ログをエクスポートしました"
+    },
+    "examplePartAccount": {
+        "message": "サンプルユーザー_"
+    },
+    "examplePartTweetId": {
+        "message": "88669977_"
+    },
+    "examplePartTweetTime": {
+        "message": "20230810_"
+    },
+    "examplePartAuthorName": {
+        "message": "サンプル作者_"
+    },
+    "examplePartAuthorId": {
+        "message": "12345_"
+    },
+    "examplePartIllustId": {
+        "message": "88669977_"
+    },
+    "examplePartDownloadDate": {
+        "message": "20230811_"
+    },
+    "notifQueuedTitle": {
+        "message": "ダウンロード開始"
+    },
+    "notifQueuedImage": {
+        "message": "画像をダウンロードキューに追加しました"
+    },
+    "notifQueuedVideo": {
+        "message": "動画をダウンロードキューに追加しました"
+    },
+    "notifRetryTitle": {
+        "message": "ダウンロードを再試行中"
+    },
+    "notifRetryGeneric": {
+        "message": "ネットワークエラーのため再試行しています…"
+    },
+    "notifRetryTwitter": {
+        "message": "Twitter画像を再試行しています…"
+    },
+    "notifRetryPixiv": {
+        "message": "Pixiv画像を再試行しています…"
+    },
+    "notifFailedTitle": {
+        "message": "ダウンロードに失敗"
+    },
+    "notifFailedMessage": {
+        "message": "ダウンロードに失敗しました：$ERROR$",
+        "placeholders": {
+            "error": {
+                "content": "$1"
+            }
+        }
+    },
+    "notifBatchTitle": {
+        "message": "一括ダウンロード中"
+    },
+    "notifBatchProgress": {
+        "message": "完了 $CURRENT$/$TOTAL$",
+        "placeholders": {
+            "current": {
+                "content": "$1"
+            },
+            "total": {
+                "content": "$2"
+            }
+        }
+    },
+    "notifBatchDoneTitle": {
+        "message": "一括ダウンロードが完了"
+    },
+    "notifBatchDoneMessage": {
+        "message": "合計 $COUNT$ 個のファイルをキューに追加しました",
+        "placeholders": {
+            "count": {
+                "content": "$1"
+            }
+        }
+    },
+    "notifInterruptedTitle": {
+        "message": "ダウンロードが中断されました"
+    },
+    "notifInterruptedMessage": {
+        "message": "$FILE$：$ERROR$",
+        "placeholders": {
+            "file": {
+                "content": "$1"
+            },
+            "error": {
+                "content": "$2"
+            }
+        }
+    }
 }

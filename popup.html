@@ -2,10 +2,46 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title data-i18n="popupTitle">Filename Format Settings</title>
+    <title data-i18n="popupTitle">下载设置</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-        
+        :root {
+            --bg: #eef1f4;
+            --surface: #ffffff;
+            --surface-soft: #f8fafc;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --muted: #64748b;
+            --accent: #10b981;
+            --accent-strong: #059669;
+            --accent-ink: #047857;
+            --accent-soft: rgba(16, 185, 129, 0.10);
+            --accent-border: rgba(16, 185, 129, 0.30);
+            --danger-soft: rgba(239, 68, 68, 0.08);
+            --danger-border: rgba(239, 68, 68, 0.22);
+            --danger-ink: #7f1d1d;
+            --track: #cbd5e1;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0b1220;
+                --surface: #151e2e;
+                --surface-soft: #1b2536;
+                --border: #2a3650;
+                --text: #e2e8f0;
+                --muted: #8fa1b8;
+                --accent: #34d399;
+                --accent-strong: #10b981;
+                --accent-ink: #6ee7b7;
+                --accent-soft: rgba(52, 211, 153, 0.12);
+                --accent-border: rgba(52, 211, 153, 0.38);
+                --danger-soft: rgba(248, 113, 113, 0.10);
+                --danger-border: rgba(248, 113, 113, 0.28);
+                --danger-ink: #fca5a5;
+                --track: #334155;
+            }
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,89 +49,49 @@
         }
 
         body {
-            font-family: 'Inter', 'Noto Sans CJK SC', sans-serif;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+                Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
             width: 400px;
-            height: 520px;
+            height: 560px;
             overflow: hidden;
-            background: #f0f0f0;
+            background: var(--bg);
+            color: var(--text);
         }
 
-        /* 主容器 - 左右分栏 */
-        .main-container {
+        .app {
             display: flex;
+            flex-direction: column;
             height: 100%;
-            position: relative;
         }
 
-        /* 左侧助手区域 */
-        .assistant-panel {
-            width: 130px;
-            height: 100%;
-            background: url('images/image.png') no-repeat center center;
-            background-size: cover;
-            position: relative;
-            overflow: hidden;
+        /* 顶栏 */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #ffffff;
+            flex: none;
         }
 
-        /* 助手区域遮罩层 */
-        .assistant-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, 
-                rgba(34, 197, 94, 0.15) 0%, 
-                rgba(16, 185, 129, 0.1) 50%, 
-                rgba(255, 255, 255, 0.05) 100%);
-            backdrop-filter: blur(1px);
+        .header-title {
+            font-size: 15px;
+            font-weight: 600;
         }
 
-
-        /* 右侧设置区域 */
-        .settings-panel {
-            width: 270px;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            position: relative;
-            overflow-y: auto;
-            backdrop-filter: blur(10px);
-            border-left: 4px solid;
-            border-image: linear-gradient(135deg, #10b981, #059669, #047857) 1;
+        .header-version {
+            font-size: 11px;
+            opacity: 0.85;
+            font-variant-numeric: tabular-nums;
         }
 
-        /* 自定义滚动条 */
-        .settings-panel::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .settings-panel::-webkit-scrollbar-track {
-            background: rgba(107, 114, 128, 0.1);
-        }
-
-        .settings-panel::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #6b7280, #4b5563);
-            border-radius: 3px;
-        }
-
-        .settings-panel::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, #4b5563, #374151);
-        }
-
-        /* 设置内容容器 */
-        .settings-content {
-            padding: 16px 18px;
-        }
-
-        /* 顶部标签页 */
+        /* 标签页 */
         .tabs {
             display: flex;
             gap: 6px;
             padding: 10px 12px 0;
-            position: sticky;
-            top: 0;
-            background: rgba(255, 255, 255, 0.95);
-            z-index: 10;
+            flex: none;
         }
 
         .tab {
@@ -105,71 +101,89 @@
             border-radius: 8px;
             font-size: 12px;
             font-weight: 600;
-            color: #065f46;
-            background: rgba(16, 185, 129, 0.12);
+            font-family: inherit;
+            color: var(--accent-ink);
+            background: var(--accent-soft);
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: background 0.15s ease, color 0.15s ease;
         }
 
         .tab.active {
-            background: linear-gradient(135deg, #10b981, #059669);
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
             color: #ffffff;
-            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        }
+
+        .tab:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        /* 内容区 */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px 16px 16px;
+        }
+
+        .content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .content::-webkit-scrollbar-thumb {
+            background: var(--track);
+            border-radius: 3px;
         }
 
         .tab-content {
             display: none;
-            padding: 0 18px 18px;
         }
 
         .tab-content.active {
             display: block;
         }
 
-        /* 标题样式 */
-        .title {
-            text-align: center;
-            font-size: 16px;
+        .section-label {
+            font-size: 12px;
             font-weight: 600;
-            color: #047857;
-            margin-bottom: 14px;
-            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+            color: var(--muted);
+            margin: 14px 0 8px;
         }
 
-        /* 开关区域 */
-        .switches-section {
+        .section-label:first-child {
+            margin-top: 0;
+        }
+
+        /* 开关卡片：整个卡片可点击 */
+        .switch-row {
             display: flex;
             gap: 8px;
-            margin-bottom: 16px;
         }
 
-        .switch-container {
+        .switch-card {
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 8px;
             padding: 10px 12px;
-            background: rgba(34, 197, 94, 0.12);
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 10px;
-            border: 1px solid rgba(34, 197, 94, 0.25);
-            font-weight: 500;
             font-size: 12px;
-            color: #047857;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+            font-weight: 500;
+            cursor: pointer;
+            transition: border-color 0.15s ease;
         }
 
-        .switch-container:hover {
-            background: rgba(34, 197, 94, 0.2);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+        .switch-card:hover {
+            border-color: var(--accent-border);
         }
 
-        /* 现代化开关样式 */
         .switch {
             position: relative;
             width: 38px;
             height: 20px;
+            flex: none;
         }
 
         .switch input {
@@ -180,400 +194,180 @@
 
         .slider {
             position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+            inset: 0;
+            background: var(--track);
             border-radius: 20px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background 0.2s ease;
         }
 
         .slider:before {
-            position: absolute;
             content: "";
+            position: absolute;
             height: 16px;
             width: 16px;
             left: 2px;
-            bottom: 2px;
-            background: linear-gradient(135deg, #ffffff, #f3f4f6);
+            top: 2px;
+            background: #ffffff;
             border-radius: 50%;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            transition: transform 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
         }
 
         input:checked + .slider {
-            background: linear-gradient(135deg, #10b981, #059669);
-            box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
         }
 
         input:checked + .slider:before {
             transform: translateX(18px);
         }
 
-        /* 格式配置区域 */
-        .format-section {
-            margin-bottom: 12px;
+        input:focus-visible + .slider {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
         }
 
-        .format-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #065f46;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
-        }
-
-        .format-title::before {
-            content: "✨";
-            margin-right: 6px;
-            font-size: 12px;
-        }
-
-        .format-selection {
+        /* 文件名格式选项：选中后右上角显示序号徽标（文件名中的拼接顺序） */
+        .format-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 6px;
         }
 
         .format-option {
-            padding: 8px 10px;
-            background: rgba(255, 255, 255, 0.8);
-            border: 2px solid rgba(34, 197, 94, 0.25);
+            position: relative;
+            padding: 9px 10px;
+            background: var(--surface);
+            border: 1.5px solid var(--border);
             border-radius: 8px;
-            cursor: pointer;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 500;
-            color: #065f46;
+            font-family: inherit;
+            color: var(--text);
             text-align: center;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            user-select: none;
-            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
         }
 
         .format-option:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(34, 197, 94, 0.2);
-            border-color: rgba(34, 197, 94, 0.4);
+            border-color: var(--accent-border);
         }
 
         .format-option.selected {
-            background: linear-gradient(135deg, #10b981, #059669);
-            border-color: #047857;
-            color: white;
-            box-shadow: 0 3px 12px rgba(16, 185, 129, 0.3);
-            text-shadow: none;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            border-color: var(--accent-strong);
+            color: #ffffff;
+        }
+
+        .format-option[data-pos]::after {
+            content: attr(data-pos);
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 16px;
+            height: 16px;
+            line-height: 16px;
+            border-radius: 50%;
+            background: #ffffff;
+            color: var(--accent-strong);
+            font-size: 10px;
+            font-weight: 700;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .format-option:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
         }
 
         /* 示例区域 */
         .example-container {
-            background: rgba(249, 250, 251, 0.8);
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
             border-radius: 10px;
-            padding: 10px;
-            margin: 12px 0;
-            border: 1px solid rgba(34, 197, 94, 0.15);
-            backdrop-filter: blur(4px);
+            padding: 10px 12px;
+            margin-top: 14px;
         }
 
         .example-title {
             font-size: 11px;
             font-weight: 600;
-            color: #047857;
-            margin-bottom: 4px;
-            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+            color: var(--muted);
+            margin: 8px 0 4px;
+        }
+
+        .example-title:first-child {
+            margin-top: 0;
         }
 
         .example-filename {
-            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-            font-size: 9px;
-            color: #374151;
-            background: rgba(255, 255, 255, 0.7);
-            padding: 4px 6px;
-            border-radius: 4px;
-            margin-bottom: 6px;
-            border-left: 2px solid #10b981;
-            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
-        }
-
-        /* 保存按钮 */
-        #saveButton {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #10b981, #059669);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
-        }
-
-        #saveButton:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-            background: linear-gradient(135deg, #059669, #047857);
-        }
-
-        #saveButton:active {
-            transform: translateY(0);
-        }
-
-        /* 成功消息 */
-        .success-message {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            background: url('images/success.png') no-repeat center center;
-            background-size: cover;
-            z-index: 1000;
-            backdrop-filter: blur(5px);
-        }
-
-        .success-text {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px 30px;
-            border-radius: 16px;
-            color: #059669;
-            font-size: 16px;
-            font-weight: 600;
-            text-align: center;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            border: 2px solid rgba(16, 185, 129, 0.3);
-        }
-
-        /* 装饰性元素 */
-        .decorative-dots {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 3px;
-        }
-
-        .dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #10b981, #059669);
-            opacity: 0.4;
-            animation: pulse 2s infinite ease-in-out;
-        }
-
-        .dot:nth-child(2) {
-            animation-delay: 0.3s;
-        }
-
-        .dot:nth-child(3) {
-            animation-delay: 0.6s;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 0.4; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.1); }
-        }
-
-        /* 代理设置 */
-        .proxy-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
-
-        .proxy-header h3 {
-            font-size: 14px;
-            color: #065f46;
-        }
-
-        .btn-primary {
-            padding: 6px 10px;
-            border-radius: 8px;
-            border: none;
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: #fff;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        .proxy-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .proxy-item {
-            padding: 10px;
-            border-radius: 10px;
-            background: rgba(16, 185, 129, 0.08);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-
-        .proxy-main.active {
-            border-left: 3px solid #10b981;
-            padding-left: 6px;
-        }
-
-        .proxy-title {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            color: #065f46;
-        }
-
-        .proxy-domain {
+            font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
             font-size: 11px;
-            color: #374151;
-            margin-top: 4px;
+            color: var(--text);
+            background: var(--surface);
+            border-left: 2px solid var(--accent);
+            padding: 4px 8px;
+            border-radius: 4px;
+            word-break: break-all;
         }
 
-        .proxy-actions {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
+        .example-note {
+            font-size: 10.5px;
+            color: var(--muted);
             margin-top: 8px;
         }
 
-        .btn-outline {
-            border: 1px solid rgba(16, 185, 129, 0.5);
-            background: transparent;
-            color: #065f46;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 11px;
-            cursor: pointer;
-        }
-
-        .proxy-badge {
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 6px;
-            background: rgba(16, 185, 129, 0.2);
-            color: #065f46;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-        .status-on {
-            background: #10b981;
-        }
-
-        .status-off {
-            background: #9ca3af;
-        }
-
-        .proxy-options {
-            margin-top: 12px;
-            display: grid;
-            gap: 8px;
-            font-size: 12px;
-            color: #065f46;
-        }
-
-        .checkbox {
+        /* 设置页脚 */
+        .settings-footer {
             display: flex;
-            gap: 6px;
             align-items: center;
-        }
-
-        /* 对话框 */
-        .dialog {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.35);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-        }
-
-        .dialog.open {
-            display: flex;
-        }
-
-        .dialog-content {
-            width: 90%;
-            background: #ffffff;
-            border-radius: 12px;
-            padding: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-
-        .dialog-content h3 {
-            font-size: 14px;
-            color: #065f46;
-            margin-bottom: 12px;
-        }
-
-        .form-group {
-            margin-bottom: 10px;
-        }
-
-        .form-group label {
-            font-size: 12px;
-            color: #374151;
-            display: block;
-            margin-bottom: 4px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 6px 8px;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 6px;
-            font-size: 12px;
-        }
-
-        .dialog-actions {
-            display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
             gap: 8px;
-            margin-top: 10px;
+            margin-top: 16px;
         }
 
-        .dialog-actions button {
+        .auto-save-hint {
+            font-size: 10.5px;
+            color: var(--muted);
+        }
+
+        .btn-ghost {
             padding: 6px 12px;
-            border-radius: 6px;
-            border: none;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            font-size: 11px;
+            font-family: inherit;
             cursor: pointer;
-            font-size: 12px;
+            transition: border-color 0.15s ease, color 0.15s ease;
         }
 
-        #cancelProxyBtn {
-            background: #e5e7eb;
+        .btn-ghost:hover {
+            border-color: var(--accent-border);
+            color: var(--accent-ink);
+        }
+
+        .btn-ghost:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
         }
 
         /* 日志 */
         .log-filters {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             margin-bottom: 10px;
         }
 
         .log-filters select,
         .log-filters button {
             font-size: 11px;
+            font-family: inherit;
             padding: 6px 8px;
             border-radius: 6px;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            background: #ffffff;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
             cursor: pointer;
         }
 
@@ -584,148 +378,166 @@
         }
 
         .log-item {
-            padding: 8px;
+            padding: 8px 10px;
             border-radius: 8px;
-            background: rgba(239, 68, 68, 0.08);
-            border: 1px solid rgba(239, 68, 68, 0.2);
+            background: var(--danger-soft);
+            border: 1px solid var(--danger-border);
             font-size: 11px;
-            color: #7f1d1d;
+            color: var(--danger-ink);
         }
 
-        .log-title {
+        .log-header {
             display: flex;
             justify-content: space-between;
+            gap: 8px;
             font-weight: 600;
             margin-bottom: 4px;
         }
 
+        .log-time {
+            font-weight: 400;
+            opacity: 0.75;
+            flex: none;
+        }
+
+        .log-action {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
         .log-url {
-            color: #991b1b;
             word-break: break-all;
+            opacity: 0.85;
+            margin-top: 2px;
         }
 
         .empty-state {
             text-align: center;
-            padding: 12px;
+            padding: 16px;
             font-size: 12px;
-            color: #6b7280;
+            color: var(--muted);
+        }
+
+        /* 轻量 toast（自动保存反馈） */
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 18px;
+            transform: translateX(-50%) translateY(8px);
+            background: rgba(15, 23, 42, 0.92);
+            color: #ffffff;
+            font-size: 12px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            z-index: 100;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
         }
     </style>
 </head>
 <body>
-    <div class="main-container">
-        <!-- 左侧助手区域 -->
-        <div class="assistant-panel">
-            <div class="assistant-overlay"></div>
-            <div class="decorative-dots">
-                <div class="dot"></div>
-                <div class="dot"></div>
-                <div class="dot"></div>
-            </div>
+    <div class="app">
+        <header class="header">
+            <span class="header-title">⬇️ <span data-i18n="popupTitle">下载设置</span></span>
+            <span class="header-version" id="versionLabel"></span>
+        </header>
+
+        <div class="tabs" role="tablist" aria-label="Settings navigation">
+            <button type="button" class="tab active" id="tab-settings" role="tab" aria-selected="true"
+                aria-controls="settings-tab" data-tab="settings" data-i18n="tabSettings">设置</button>
+            <button type="button" class="tab" id="tab-logs" role="tab" aria-selected="false"
+                aria-controls="logs-tab" data-tab="logs" data-i18n="tabLogs">日志</button>
         </div>
 
-        <!-- 右侧设置区域 -->
-        <div class="settings-panel">
-            <div class="tabs">
-                <button class="tab active" data-tab="settings" data-i18n="tabSettings">设置</button>
-                <button class="tab" data-tab="logs" data-i18n="tabLogs">日志</button>
-            </div>
-
-            <div class="tab-content active" id="settings-tab">
-                <div class="settings-content">
-                    <div class="title">📁 <span data-i18n="popupTitle">文件名格式设置</span></div>
-
-                    <!-- 平台开关 -->
-                    <div class="switches-section">
-                        <div class="switch-container">
-                            <span>🐦 <span data-i18n="twitterLabel">Twitter</span></span>
-                            <label class="switch">
-                                <input type="checkbox" id="twitterSwitch">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-
-                        <div class="switch-container">
-                            <span>🎨 <span data-i18n="pixivLabel">Pixiv</span></span>
-                            <label class="switch">
-                                <input type="checkbox" id="pixivSwitch">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="switches-section">
-                        <div class="switch-container">
-                            <span>🔔 <span data-i18n="notificationLabel">通知</span></span>
-                            <label class="switch">
-                                <input type="checkbox" id="notificationSwitch">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Twitter格式配置 -->
-                    <div class="format-section">
-                        <div class="format-title" data-i18n="twitterFormatTitle">推特文件名格式</div>
-                        <div class="format-selection" id="twitterFormat">
-                            <div class="format-option" data-value="account"><span data-i18n="formatAccount">推特账号</span></div>
-                            <div class="format-option" data-value="tweetId"><span data-i18n="formatTweetId">推特ID</span></div>
-                            <div class="format-option" data-value="tweetTime"><span data-i18n="formatTweetTime">推文时间</span></div>
-                            <div class="format-option" data-value="downloadDate"><span data-i18n="formatDownloadDate">下载时间</span></div>
-                        </div>
-                    </div>
-
-                    <!-- Pixiv格式配置 -->
-                    <div class="format-section">
-                        <div class="format-title" data-i18n="pixivFormatTitle">Pixiv文件名格式</div>
-                        <div class="format-selection" id="pixivFormat">
-                            <div class="format-option" data-value="authorName"><span data-i18n="formatAuthorName">作者名称</span></div>
-                            <div class="format-option" data-value="authorId"><span data-i18n="formatAuthorId">作者ID</span></div>
-                            <div class="format-option" data-value="illustId"><span data-i18n="formatIllustId">作品ID</span></div>
-                            <div class="format-option" data-value="downloadDate"><span data-i18n="formatDownloadDate">下载时间</span></div>
-                        </div>
-                    </div>
-
-                    <!-- 文件名示例 -->
-                    <div class="example-container">
-                        <div class="example-title">🖼️ <span data-i18n="exampleTwitterImage">推特图片示例</span></div>
-                        <div id="twitterExample" class="example-filename">推特账号_推特ID_20230811.jpg</div>
-
-                        <div class="example-title">🎬 <span data-i18n="exampleTwitterVideo">推特视频示例</span></div>
-                        <div id="twitterVideoExample" class="example-filename">推特账号_推特ID_1920x1080.mp4</div>
-
-                        <div class="example-title">🎭 <span data-i18n="examplePixiv">Pixiv文件名示例</span></div>
-                        <div id="pixivExample" class="example-filename">作品ID_20230811.jpg</div>
-                    </div>
-
-                    <button id="saveButton">💾 <span data-i18n="saveButton">保存设置</span></button>
+        <main class="content">
+            <section class="tab-content active" id="settings-tab" role="tabpanel" aria-labelledby="tab-settings">
+                <div class="section-label" data-i18n="sectionPlatforms">平台开关</div>
+                <div class="switch-row">
+                    <label class="switch-card">
+                        <span>🐦 <span data-i18n="twitterLabel">Twitter</span></span>
+                        <span class="switch">
+                            <input type="checkbox" id="twitterSwitch">
+                            <span class="slider"></span>
+                        </span>
+                    </label>
+                    <label class="switch-card">
+                        <span>🎨 <span data-i18n="pixivLabel">Pixiv</span></span>
+                        <span class="switch">
+                            <input type="checkbox" id="pixivSwitch">
+                            <span class="slider"></span>
+                        </span>
+                    </label>
                 </div>
-            </div>
 
-            <div class="tab-content" id="logs-tab">
-                <div class="settings-content">
-                    <div class="format-title" data-i18n="errorLogTitle">错误日志</div>
-                    <div class="log-filters">
-                        <select id="logPlatform">
-                            <option value="all" data-i18n="logFilterAll">所有平台</option>
-                            <option value="twitter">Twitter</option>
-                            <option value="pixiv">Pixiv</option>
-                        </select>
-                        <button id="clearLogs" data-i18n="clearLogs">清空日志</button>
-                        <button id="exportLogs" data-i18n="exportLogs">导出日志</button>
-                    </div>
-                    <div class="log-list" id="logList"></div>
+                <div class="section-label" data-i18n="sectionGeneral">通用</div>
+                <div class="switch-row">
+                    <label class="switch-card">
+                        <span>🔔 <span data-i18n="notificationLabel">通知</span></span>
+                        <span class="switch">
+                            <input type="checkbox" id="notificationSwitch">
+                            <span class="slider"></span>
+                        </span>
+                    </label>
                 </div>
-            </div>
-        </div>
+
+                <div class="section-label" data-i18n="twitterFormatTitle">推特文件名格式</div>
+                <div class="format-grid" id="twitterFormat" role="group" aria-label="Twitter filename format">
+                    <button type="button" class="format-option" data-value="account"><span data-i18n="formatAccount">推特账号</span></button>
+                    <button type="button" class="format-option" data-value="tweetId"><span data-i18n="formatTweetId">推特ID</span></button>
+                    <button type="button" class="format-option" data-value="tweetTime"><span data-i18n="formatTweetTime">推文时间</span></button>
+                    <button type="button" class="format-option" data-value="downloadDate"><span data-i18n="formatDownloadDate">下载时间</span></button>
+                </div>
+
+                <div class="section-label" data-i18n="pixivFormatTitle">Pixiv文件名格式</div>
+                <div class="format-grid" id="pixivFormat" role="group" aria-label="Pixiv filename format">
+                    <button type="button" class="format-option" data-value="authorName"><span data-i18n="formatAuthorName">作者名称</span></button>
+                    <button type="button" class="format-option" data-value="authorId"><span data-i18n="formatAuthorId">作者ID</span></button>
+                    <button type="button" class="format-option" data-value="illustId"><span data-i18n="formatIllustId">作品ID</span></button>
+                    <button type="button" class="format-option" data-value="downloadDate"><span data-i18n="formatDownloadDate">下载时间</span></button>
+                </div>
+
+                <div class="example-container">
+                    <div class="example-title">🖼️ <span data-i18n="exampleTwitterImage">推特图片示例</span></div>
+                    <div id="twitterExample" class="example-filename">示例用户_88669977.jpg</div>
+
+                    <div class="example-title">🎬 <span data-i18n="exampleTwitterVideo">推特视频示例</span></div>
+                    <div id="twitterVideoExample" class="example-filename">示例用户_88669977_1920x1080.mp4</div>
+
+                    <div class="example-title">🎭 <span data-i18n="examplePixiv">Pixiv文件名示例</span></div>
+                    <div id="pixivExample" class="example-filename">示例作者_88669977.jpg</div>
+
+                    <div class="example-note">ℹ️ <span data-i18n="exampleMultiPageNote">多图作品会自动追加 _p01 页码后缀</span></div>
+                </div>
+
+                <div class="settings-footer">
+                    <span class="auto-save-hint" data-i18n="autoSaveHint">更改即时生效，自动保存</span>
+                    <button type="button" id="resetButton" class="btn-ghost" data-i18n="resetButton">恢复默认</button>
+                </div>
+            </section>
+
+            <section class="tab-content" id="logs-tab" role="tabpanel" aria-labelledby="tab-logs">
+                <div class="section-label" data-i18n="errorLogTitle">错误日志</div>
+                <div class="log-filters">
+                    <select id="logPlatform" aria-label="Filter logs by platform">
+                        <option value="all" data-i18n="logFilterAll">所有平台</option>
+                        <option value="twitter">Twitter</option>
+                        <option value="pixiv">Pixiv</option>
+                    </select>
+                    <button type="button" id="clearLogs" data-i18n="clearLogs">清空日志</button>
+                    <button type="button" id="exportLogs" data-i18n="exportLogs">导出日志</button>
+                </div>
+                <div class="log-list" id="logList"></div>
+            </section>
+        </main>
     </div>
 
-    <div id="successMessage" class="success-message">
-        <div class="success-text">
-            ✅ <span data-i18n="saveSuccess">Successfully Saved!</span><br>
-            <small><span data-i18n="settingsUpdated">Settings Updated</span></small>
-        </div>
-    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <!-- 引入外部JS文件 -->
     <script src="popup.js"></script>

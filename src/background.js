@@ -3,8 +3,8 @@ import { FilenameGenerator } from './core/filename-generator.js';
 import { RetryManager } from './utils/retry.js';
 import { Notifier } from './utils/notifier.js';
 import { ErrorLogger } from './utils/error-logger.js';
-import { Storage } from './utils/storage.js';
 import { resolveExtension } from './utils/file-type.js';
+import { t } from './utils/i18n.js';
 
 const configManager = new ConfigManager();
 const filenameGenerator = new FilenameGenerator();
@@ -40,6 +40,10 @@ function invalidate(changes) {
   }
 }
 
+// 下载元数据缓存：onChanged 只携带 downloadId，
+// 需要 platform/url/filename 才能把中断事件写进错误日志。
+const downloadMetaCache = new Map();
+
 async function downloadWithRetry(request, type) {
   await ensureHydrated();
   const formats = configCache.formats;
@@ -69,17 +73,27 @@ async function downloadWithRetry(request, type) {
     });
   });
 
+  // 多图批次不发逐张通知，由进度通知统一展示
+  const isBatchItem = Number(request.pageTotal) > 1;
+
   try {
     const downloadId = await retryManager.retry(downloadTask, {
       name: type === 'video' ? '视频下载' : '图片下载',
       onRetry: ({ attempt }) => {
         if (attempt === 2 && notificationsEnabled) {
-          Notifier.showWarning('下载重试中', '网络波动导致失败，正在重试...');
+          Notifier.showWarning(
+            t('notifRetryTitle', [], '下载重试中'),
+            t('notifRetryGeneric', [], '网络波动导致失败，正在重试…')
+          );
         }
       }
     });
-    if (notificationsEnabled) {
-      Notifier.showSuccess('下载开始', `${type === 'video' ? '视频' : '图片'}已加入下载队列`);
+    downloadMetaCache.set(downloadId, { platform: request.platform, url: request.url, filename });
+    if (notificationsEnabled && !isBatchItem) {
+      Notifier.showSuccess(
+        t('notifQueuedTitle', [], '下载开始'),
+        t(type === 'video' ? 'notifQueuedVideo' : 'notifQueuedImage', [], '已加入下载队列')
+      );
     }
     return { success: true, downloadId };
   } catch (error) {
@@ -92,9 +106,46 @@ async function downloadWithRetry(request, type) {
       success: false
     });
     if (notificationsEnabled) {
-      Notifier.showError('下载失败', error);
+      Notifier.showError(
+        t('notifFailedTitle', [], '下载失败'),
+        t('notifFailedMessage', [error.message], `下载失败：${error.message}`)
+      );
     }
     return { success: false, error: error.message };
+  }
+}
+
+// 批量进度聚合：多个批次（连续点赞多篇多图作品）共用一条进度通知。
+// current 取各批次已完成的单调最大值，避免并发上报导致进度回退。
+const batchProgress = new Map();
+
+function handleDownloadProgress({ batchKey, current, total }) {
+  const key = batchKey || 'default';
+  const prev = batchProgress.get(key) || { current: 0, total: 0 };
+  batchProgress.set(key, {
+    current: Math.max(prev.current, Number(current) || 0),
+    total: Math.max(prev.total, Number(total) || 0)
+  });
+
+  let done = 0;
+  let sum = 0;
+  for (const batch of batchProgress.values()) {
+    done += batch.current;
+    sum += batch.total;
+  }
+
+  if (done < sum) {
+    Notifier.showProgress(done, sum);
+    return;
+  }
+
+  batchProgress.clear();
+  Notifier.clearProgress();
+  if (sum > 0) {
+    Notifier.showSuccess(
+      t('notifBatchDoneTitle', [], '批量下载完成'),
+      t('notifBatchDoneMessage', [String(sum)], `共 ${sum} 个文件已加入下载队列`)
+    );
   }
 }
 
@@ -127,34 +178,44 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === 'downloadProgress') {
-    ensureHydrated().then(() => {
-      if (!configCache.notificationsEnabled) return;
-      Notifier.showProgress(request.current, request.total);
-    });
+    handleDownloadProgress(request);
   }
 });
 
-// 首次安装 / 升级时把旧用户从硬编码代理迁移到配置存储。
-// 保留这段以兼容旧 release，但当前默认 ProxyManager.getProxyDomain 已经是占位符。
-chrome.runtime.onInstalled.addListener(async details => {
-  if (details.reason !== 'update') return;
-  const { pixivProxies = [] } = await Storage.getSync('pixivProxies');
-  if (pixivProxies.length > 0) return;
+// 下载"加入队列"成功不代表落盘成功：网络断开、磁盘满等
+// 会在之后触发 state=interrupted，这里补全失败链路并写入错误日志。
+chrome.downloads.onChanged.addListener(delta => {
+  if (!delta.state) return;
 
-  const legacyProxy = 'pixiv.zhongrui.app';
-  await Storage.setSync({
-    pixivProxies: [{
-      id: 'migrated-proxy',
-      name: '历史代理（已迁移）',
-      domain: legacyProxy,
-      enabled: true,
-      priority: 1
-    }],
-    activeProxyId: 'migrated-proxy'
-  });
-
-  await ensureHydrated();
-  if (configCache.notificationsEnabled) {
-    Notifier.showSuccess('代理配置已升级', 'Pixiv 代理设置已迁移到新配置面板。');
+  if (delta.state.current === 'complete') {
+    downloadMetaCache.delete(delta.id);
+    return;
   }
+  if (delta.state.current !== 'interrupted') return;
+
+  const meta = downloadMetaCache.get(delta.id) || {};
+  downloadMetaCache.delete(delta.id);
+  const error = (delta.error && delta.error.current) || 'INTERRUPTED';
+
+  chrome.downloads.search({ id: delta.id }, items => {
+    const item = Array.isArray(items) ? items[0] : null;
+    const filePath = (item && item.filename) || meta.filename || '';
+    const file = filePath.split(/[\\/]/).pop() || '';
+
+    ErrorLogger.log({
+      platform: meta.platform || 'unknown',
+      action: 'downloadInterrupted',
+      url: meta.url || (item && (item.finalUrl || item.url)) || '',
+      error,
+      success: false
+    });
+
+    ensureHydrated().then(() => {
+      if (!configCache.notificationsEnabled) return;
+      Notifier.showError(
+        t('notifInterruptedTitle', [], '下载已中断'),
+        t('notifInterruptedMessage', [file || '-', error], `${file} ${error}`)
+      );
+    });
+  });
 });

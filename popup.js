@@ -15,206 +15,177 @@
     }
   };
 
+  // src/utils/i18n.js
+  function t(key, substitutions = [], fallback = "") {
+    try {
+      const msg = chrome.i18n.getMessage(key, substitutions);
+      if (msg)
+        return msg;
+    } catch (e) {
+    }
+    return fallback;
+  }
+
   // src/popup.js
   var DEFAULT_TWITTER_FORMATS = ["account", "tweetId"];
   var DEFAULT_PIXIV_FORMATS = ["authorName", "illustId"];
-  function t(key) {
-    if (typeof chrome !== "undefined" && chrome.i18n && chrome.i18n.getMessage) {
-      const msg = chrome.i18n.getMessage(key);
-      if (msg)
-        return msg;
+  var FORMAT_PART_KEYS = {
+    account: "examplePartAccount",
+    tweetId: "examplePartTweetId",
+    tweetTime: "examplePartTweetTime",
+    authorName: "examplePartAuthorName",
+    authorId: "examplePartAuthorId",
+    illustId: "examplePartIllustId",
+    downloadDate: "examplePartDownloadDate"
+  };
+  var FORMAT_PART_FALLBACKS = {
+    account: "exampleUser_",
+    tweetId: "88669977_",
+    tweetTime: "20230810_",
+    authorName: "exampleAuthor_",
+    authorId: "12345_",
+    illustId: "88669977_",
+    downloadDate: "20230811_"
+  };
+  var state = {
+    orders: {
+      twitterFormat: [...DEFAULT_TWITTER_FORMATS],
+      pixivFormat: [...DEFAULT_PIXIV_FORMATS]
     }
-    return "";
-  }
-  function getCurrentLocale() {
-    const lang = typeof chrome !== "undefined" && chrome.i18n?.getUILanguage?.() || typeof navigator !== "undefined" && (navigator.language || navigator.userLanguage) || "en";
-    if (lang.startsWith("ja"))
-      return "ja";
-    if (lang === "zh-TW" || lang === "zh_TW" || lang.startsWith("zh-Hant"))
-      return "zh_TW";
-    if (lang.startsWith("zh"))
-      return "zh_CN";
-    if (lang.startsWith("de"))
-      return "de";
-    if (lang.startsWith("ko"))
-      return "ko";
-    if (lang.startsWith("ru"))
-      return "ru";
-    if (lang.startsWith("cs"))
-      return "cs";
-    return "en";
-  }
+  };
   function applyI18n() {
     const elements = document.querySelectorAll("[data-i18n]");
     elements.forEach((element) => {
-      const key = element.getAttribute("data-i18n");
-      const msg = t(key);
+      const msg = t(element.getAttribute("data-i18n"));
       if (msg) {
         element.textContent = msg;
       }
     });
     const titleElement = document.querySelector("title[data-i18n]");
     if (titleElement) {
-      const key = titleElement.getAttribute("data-i18n");
-      const msg = t(key);
+      const msg = t(titleElement.getAttribute("data-i18n"));
       if (msg) {
         document.title = msg;
       }
     }
-  }
-  var EXAMPLE_TEXTS = {
-    "en": {
-      "account": "exampleUser_",
-      "tweetId": "88669977_",
-      "tweetTime": "20230810_",
-      "authorName": "exampleAuthor_",
-      "authorId": "12345_",
-      "illustId": "88669977_",
-      "downloadDate": "20230811_"
-    },
-    "ja": {
-      "account": "\u30B5\u30F3\u30D7\u30EB\u30E6\u30FC\u30B6\u30FC_",
-      "tweetId": "88669977_",
-      "tweetTime": "20230810_",
-      "authorName": "\u30B5\u30F3\u30D7\u30EB\u4F5C\u8005_",
-      "authorId": "12345_",
-      "illustId": "88669977_",
-      "downloadDate": "20230811_"
-    },
-    "zh_CN": {
-      "account": "\u793A\u4F8B\u7528\u6237_",
-      "tweetId": "88669977_",
-      "tweetTime": "20230810_",
-      "authorName": "\u793A\u4F8B\u4F5C\u8005_",
-      "authorId": "12345_",
-      "illustId": "88669977_",
-      "downloadDate": "20230811_"
-    },
-    "zh_TW": {
-      "account": "\u7BC4\u4F8B\u4F7F\u7528\u8005_",
-      "tweetId": "88669977_",
-      "tweetTime": "20230810_",
-      "authorName": "\u7BC4\u4F8B\u4F5C\u8005_",
-      "authorId": "12345_",
-      "illustId": "88669977_",
-      "downloadDate": "20230811_"
-    },
-    "de": {
-      "account": "BeispielBenutzer_",
-      "tweetId": "88669977_",
-      "tweetTime": "20230810_",
-      "authorName": "BeispielAutor_",
-      "authorId": "12345_",
-      "illustId": "88669977_",
-      "downloadDate": "20230811_"
-    },
-    "ko": {
-      "account": "\uC608\uC2DC\uC0AC\uC6A9\uC790_",
-      "tweetId": "88669977_",
-      "tweetTime": "20230810_",
-      "authorName": "\uC608\uC2DC\uC791\uAC00_",
-      "authorId": "12345_",
-      "illustId": "88669977_",
-      "downloadDate": "20230811_"
-    },
-    "ru": {
-      "account": "\u041F\u0440\u0438\u043C\u0435\u0440\u041F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044F_",
-      "tweetId": "88669977_",
-      "tweetTime": "20230810_",
-      "authorName": "\u041F\u0440\u0438\u043C\u0435\u0440\u0410\u0432\u0442\u043E\u0440\u0430_",
-      "authorId": "12345_",
-      "illustId": "88669977_",
-      "downloadDate": "20230811_"
-    },
-    "cs": {
-      "account": "P\u0159\xEDkladU\u017Eivatel_",
-      "tweetId": "88669977_",
-      "tweetTime": "20230810_",
-      "authorName": "P\u0159\xEDkladAutor_",
-      "authorId": "12345_",
-      "illustId": "88669977_",
-      "downloadDate": "20230811_"
+    const uiLang = typeof chrome !== "undefined" && chrome.i18n?.getUILanguage?.();
+    if (uiLang) {
+      document.documentElement.lang = uiLang;
     }
+  }
+  var toastTimer = null;
+  function showToast(message) {
+    const el = document.getElementById("toast");
+    if (!el)
+      return;
+    el.textContent = message;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 1400);
+  }
+  var pendingSaves = /* @__PURE__ */ new Map();
+  var saveTimer = null;
+  function queueSave(entries) {
+    for (const [key, value] of Object.entries(entries)) {
+      pendingSaves.set(key, value);
+    }
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flushSaves, 200);
+  }
+  async function flushSaves() {
+    if (pendingSaves.size === 0)
+      return;
+    const items = Object.fromEntries(pendingSaves);
+    pendingSaves.clear();
+    try {
+      await Storage.setSync(items);
+      showToast(t("savedToast", [], "\u8BBE\u7F6E\u5DF2\u4FDD\u5B58"));
+    } catch (error) {
+      showToast(String(error?.message || error));
+    }
+  }
+  var STORAGE_KEYS = {
+    twitterFormat: "twitterFilenameFormat",
+    pixivFormat: "pixivFilenameFormat"
   };
-  function getSelectedFormats(containerId) {
+  function renderFormatSelection(containerId) {
     const container = document.getElementById(containerId);
     if (!container)
-      return [];
-    const selectedOptions = container.querySelectorAll(".format-option.selected");
-    return Array.from(selectedOptions).map((option) => option.getAttribute("data-value"));
-  }
-  function updateExample(containerId, exampleId) {
-    const formats = getSelectedFormats(containerId);
-    const locale = getCurrentLocale();
-    const texts = EXAMPLE_TEXTS[locale] || EXAMPLE_TEXTS["en"];
-    let exampleText = "";
-    formats.forEach((format) => {
-      if (texts[format]) {
-        exampleText += texts[format];
+      return;
+    const order = state.orders[containerId];
+    container.querySelectorAll(".format-option").forEach((option) => {
+      const value = option.getAttribute("data-value");
+      const index = order.indexOf(value);
+      option.classList.toggle("selected", index >= 0);
+      option.setAttribute("aria-pressed", index >= 0 ? "true" : "false");
+      if (index >= 0) {
+        option.setAttribute("data-pos", String(index + 1));
+      } else {
+        option.removeAttribute("data-pos");
       }
     });
-    const targetEl = document.getElementById(exampleId);
-    if (!targetEl)
-      return;
-    if (exampleId === "twitterVideoExample") {
-      exampleText = exampleText ? exampleText.slice(0, -1) + "_1920x1080.mp4" : "1920x1080.mp4";
-    } else {
-      exampleText = exampleText ? exampleText.slice(0, -1) + ".jpg" : "example.jpg";
-    }
-    targetEl.textContent = exampleText;
   }
-  function toggleSelection(containerId, exampleId, videoExampleId = null) {
+  function formatDate(d) {
+    return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+  }
+  function updateExamples(containerId) {
+    const order = state.orders[containerId];
+    const platform = containerId === "twitterFormat" ? "twitter" : "pixiv";
+    let base = "";
+    for (const format of order) {
+      base += t(FORMAT_PART_KEYS[format], [], FORMAT_PART_FALLBACKS[format] || "");
+    }
+    if (!base) {
+      base = `${platform}_${formatDate(/* @__PURE__ */ new Date())}_`;
+    }
+    const imageEl = document.getElementById(containerId === "twitterFormat" ? "twitterExample" : "pixivExample");
+    if (imageEl)
+      imageEl.textContent = `${base.slice(0, -1)}.jpg`;
+    if (containerId === "twitterFormat") {
+      const videoEl = document.getElementById("twitterVideoExample");
+      if (videoEl)
+        videoEl.textContent = `${base.slice(0, -1)}_1920x1080.mp4`;
+    }
+  }
+  function bindFormatSelection(containerId) {
     const container = document.getElementById(containerId);
     if (!container)
       return;
     container.addEventListener("click", (event) => {
       const option = event.target.closest(".format-option");
-      if (option) {
-        option.classList.toggle("selected");
-        updateExample(containerId, exampleId);
-        if (videoExampleId) {
-          updateExample(containerId, videoExampleId);
-        }
+      if (!option)
+        return;
+      const value = option.getAttribute("data-value");
+      const order = state.orders[containerId];
+      const index = order.indexOf(value);
+      if (index >= 0) {
+        order.splice(index, 1);
+      } else {
+        order.push(value);
       }
+      renderFormatSelection(containerId);
+      updateExamples(containerId);
+      queueSave({ [STORAGE_KEYS[containerId]]: [...order] });
     });
   }
-  function showSuccessMessage() {
-    const successMessage = document.getElementById("successMessage");
-    if (!successMessage)
+  function bindSwitch(id, storageKey) {
+    const input = document.getElementById(id);
+    if (!input)
       return;
-    successMessage.style.display = "flex";
-    setTimeout(() => {
-      successMessage.style.display = "none";
-    }, 2e3);
-  }
-  function initSelection(containerId, storedFormats) {
-    const container = document.getElementById(containerId);
-    if (!container)
-      return;
-    storedFormats.forEach((format) => {
-      const option = container.querySelector(`[data-value="${format}"]`);
-      if (option) {
-        option.classList.add("selected");
-      }
-    });
-    if (containerId === "twitterFormat") {
-      updateExample(containerId, "twitterExample");
-      updateExample(containerId, "twitterVideoExample");
-    } else {
-      const exampleId = containerId === "pixivFormat" ? "pixivExample" : "twitterExample";
-      updateExample(containerId, exampleId);
-    }
+    input.addEventListener("change", () => queueSave({ [storageKey]: input.checked }));
   }
   function bindTabs() {
     const tabs = document.querySelectorAll(".tab");
-    const contents = document.querySelectorAll(".tab-content");
     tabs.forEach((tab) => {
       tab.addEventListener("click", () => {
-        tabs.forEach((btn) => btn.classList.remove("active"));
-        contents.forEach((content) => content.classList.remove("active"));
+        tabs.forEach((btn) => {
+          btn.classList.remove("active");
+          btn.setAttribute("aria-selected", "false");
+        });
+        document.querySelectorAll(".tab-content").forEach((content) => content.classList.remove("active"));
         tab.classList.add("active");
-        const targetId = `${tab.dataset.tab}-tab`;
-        const targetContent = document.getElementById(targetId);
+        tab.setAttribute("aria-selected", "true");
+        const targetContent = document.getElementById(`${tab.dataset.tab}-tab`);
         if (targetContent) {
           targetContent.classList.add("active");
         }
@@ -231,34 +202,49 @@
     const logList = document.getElementById("logList");
     if (!logList)
       return;
-    logList.innerHTML = "";
+    logList.replaceChildren();
     if (filteredLogs.length === 0) {
-      const emptyMsg = t("noLogs") || "\u6682\u65E0\u9519\u8BEF\u65E5\u5FD7";
-      logList.innerHTML = `<div class="empty-state">${emptyMsg}</div>`;
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = t("noLogs", [], "\u6682\u65E0\u9519\u8BEF\u65E5\u5FD7");
+      logList.appendChild(empty);
       return;
     }
     filteredLogs.forEach((log) => {
       const item = document.createElement("div");
       item.className = "log-item";
-      item.innerHTML = `
-      <div class="log-header">
-        <span class="log-platform">${log.platform}</span>
-        <span class="log-time">${new Date(log.timestamp).toLocaleString()}</span>
-      </div>
-      <div class="log-action">${log.action}</div>
-      <div class="log-error">${log.error}</div>
-      ${log.url ? `<div class="log-url">${log.url.substring(0, 50)}...</div>` : ""}
-    `;
+      const header = document.createElement("div");
+      header.className = "log-header";
+      const platformSpan = document.createElement("span");
+      platformSpan.textContent = log.platform || "-";
+      const timeSpan = document.createElement("span");
+      timeSpan.className = "log-time";
+      timeSpan.textContent = log.timestamp ? new Date(log.timestamp).toLocaleString() : "";
+      header.append(platformSpan, timeSpan);
+      const action = document.createElement("div");
+      action.className = "log-action";
+      action.textContent = log.action || "";
+      const error = document.createElement("div");
+      error.className = "log-error";
+      error.textContent = log.error || "";
+      item.append(header, action, error);
+      if (log.url) {
+        const url = document.createElement("div");
+        url.className = "log-url";
+        url.textContent = log.url.length > 120 ? `${log.url.slice(0, 120)}\u2026` : log.url;
+        url.title = log.url;
+        item.appendChild(url);
+      }
       logList.appendChild(item);
     });
   }
   async function exportLogs() {
     const { errorLogs = [] } = await Storage.getLocal("errorLogs");
     if (errorLogs.length === 0) {
-      alert(t("noLogsToExport") || "\u6682\u65E0\u65E5\u5FD7\u53EF\u5BFC\u51FA");
+      showToast(t("noLogsToExport", [], "\u6682\u65E0\u65E5\u5FD7\u53EF\u5BFC\u51FA"));
       return;
     }
-    const content = errorLogs.map((log) => JSON.stringify(log, null, 2)).join("\n");
+    const content = JSON.stringify(errorLogs, null, 2);
     const blob = new Blob([content], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -266,40 +252,40 @@
     a.download = `error-logs-${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    showToast(t("logsExportedToast", [], "\u65E5\u5FD7\u5DF2\u5BFC\u51FA"));
   }
-  var saveButton = document.getElementById("saveButton");
-  if (saveButton) {
-    saveButton.addEventListener("click", async () => {
-      const twitterFormats = getSelectedFormats("twitterFormat");
-      const pixivFormats = getSelectedFormats("pixivFormat");
-      const twitterSwitchState = document.getElementById("twitterSwitch")?.checked ?? true;
-      const pixivSwitchState = document.getElementById("pixivSwitch")?.checked ?? true;
-      const notificationsEnabled = document.getElementById("notificationSwitch")?.checked ?? true;
-      await Storage.setSync({
-        twitterFilenameFormat: twitterFormats,
-        pixivFilenameFormat: pixivFormats,
-        twitterSwitchActive: twitterSwitchState,
-        pixivSwitchActive: pixivSwitchState,
-        notificationsEnabled
+  function bindReset() {
+    const resetButton = document.getElementById("resetButton");
+    if (!resetButton)
+      return;
+    resetButton.addEventListener("click", () => {
+      state.orders.twitterFormat = [...DEFAULT_TWITTER_FORMATS];
+      state.orders.pixivFormat = [...DEFAULT_PIXIV_FORMATS];
+      renderFormatSelection("twitterFormat");
+      renderFormatSelection("pixivFormat");
+      updateExamples("twitterFormat");
+      updateExamples("pixivFormat");
+      const switches = { twitterSwitch: true, pixivSwitch: true, notificationSwitch: true };
+      for (const [id, value] of Object.entries(switches)) {
+        const input = document.getElementById(id);
+        if (input)
+          input.checked = value;
+      }
+      queueSave({
+        twitterFilenameFormat: [...DEFAULT_TWITTER_FORMATS],
+        pixivFilenameFormat: [...DEFAULT_PIXIV_FORMATS],
+        twitterSwitchActive: true,
+        pixivSwitchActive: true,
+        notificationsEnabled: true
       });
-      showSuccessMessage();
     });
   }
-  var logPlatform = document.getElementById("logPlatform");
-  if (logPlatform)
-    logPlatform.addEventListener("change", loadLogs);
-  var clearLogs = document.getElementById("clearLogs");
-  if (clearLogs) {
-    clearLogs.addEventListener("click", async () => {
-      await Storage.setLocal({ errorLogs: [] });
-      loadLogs();
-    });
-  }
-  var exportLogsBtn = document.getElementById("exportLogs");
-  if (exportLogsBtn)
-    exportLogsBtn.addEventListener("click", exportLogs);
   async function init() {
     applyI18n();
+    const versionLabel = document.getElementById("versionLabel");
+    if (versionLabel && typeof chrome !== "undefined" && chrome.runtime?.getManifest) {
+      versionLabel.textContent = `v${chrome.runtime.getManifest().version}`;
+    }
     const result = await Storage.getSync([
       "twitterFilenameFormat",
       "pixivFilenameFormat",
@@ -307,25 +293,46 @@
       "pixivSwitchActive",
       "notificationsEnabled"
     ]);
-    const twitterFormats = result.twitterFilenameFormat || DEFAULT_TWITTER_FORMATS;
-    const pixivFormats = result.pixivFilenameFormat || DEFAULT_PIXIV_FORMATS;
-    const twitterSwitch = typeof result.twitterSwitchActive === "undefined" ? true : result.twitterSwitchActive;
-    const pixivSwitch = typeof result.pixivSwitchActive === "undefined" ? true : result.pixivSwitchActive;
-    const notificationsEnabled = typeof result.notificationsEnabled === "undefined" ? true : result.notificationsEnabled;
-    initSelection("twitterFormat", twitterFormats);
-    initSelection("pixivFormat", pixivFormats);
-    toggleSelection("twitterFormat", "twitterExample", "twitterVideoExample");
-    toggleSelection("pixivFormat", "pixivExample");
-    const twSwitch = document.getElementById("twitterSwitch");
-    if (twSwitch)
-      twSwitch.checked = twitterSwitch;
-    const pxSwitch = document.getElementById("pixivSwitch");
-    if (pxSwitch)
-      pxSwitch.checked = pixivSwitch;
-    const notifSwitch = document.getElementById("notificationSwitch");
-    if (notifSwitch)
-      notifSwitch.checked = notificationsEnabled;
+    state.orders.twitterFormat = Array.isArray(result.twitterFilenameFormat) && result.twitterFilenameFormat.length > 0 ? [...result.twitterFilenameFormat] : [...DEFAULT_TWITTER_FORMATS];
+    state.orders.pixivFormat = Array.isArray(result.pixivFilenameFormat) && result.pixivFilenameFormat.length > 0 ? [...result.pixivFilenameFormat] : [...DEFAULT_PIXIV_FORMATS];
+    renderFormatSelection("twitterFormat");
+    renderFormatSelection("pixivFormat");
+    updateExamples("twitterFormat");
+    updateExamples("pixivFormat");
+    const twitterSwitch = document.getElementById("twitterSwitch");
+    if (twitterSwitch) {
+      twitterSwitch.checked = typeof result.twitterSwitchActive === "undefined" ? true : result.twitterSwitchActive;
+    }
+    const pixivSwitch = document.getElementById("pixivSwitch");
+    if (pixivSwitch) {
+      pixivSwitch.checked = typeof result.pixivSwitchActive === "undefined" ? true : result.pixivSwitchActive;
+    }
+    const notificationSwitch = document.getElementById("notificationSwitch");
+    if (notificationSwitch) {
+      notificationSwitch.checked = typeof result.notificationsEnabled === "undefined" ? true : result.notificationsEnabled;
+    }
+    bindFormatSelection("twitterFormat");
+    bindFormatSelection("pixivFormat");
+    bindSwitch("twitterSwitch", "twitterSwitchActive");
+    bindSwitch("pixivSwitch", "pixivSwitchActive");
+    bindSwitch("notificationSwitch", "notificationsEnabled");
+    bindReset();
     bindTabs();
+    const logPlatform = document.getElementById("logPlatform");
+    if (logPlatform)
+      logPlatform.addEventListener("change", loadLogs);
+    const clearLogs = document.getElementById("clearLogs");
+    if (clearLogs) {
+      clearLogs.addEventListener("click", async () => {
+        if (!confirm(t("clearLogsConfirm", [], "\u786E\u5B9A\u6E05\u7A7A\u6240\u6709\u65E5\u5FD7\uFF1F")))
+          return;
+        await Storage.setLocal({ errorLogs: [] });
+        loadLogs();
+      });
+    }
+    const exportLogsBtn = document.getElementById("exportLogs");
+    if (exportLogsBtn)
+      exportLogsBtn.addEventListener("click", exportLogs);
     await loadLogs();
   }
   if (typeof document !== "undefined") {

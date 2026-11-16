@@ -5,12 +5,7 @@ const DEFAULTS = {
   pixivSwitchActive: true,
   notificationsEnabled: true,
   twitterFilenameFormat: ['account', 'tweetId'],
-  pixivFilenameFormat: ['authorName', 'illustId'],
-  pixivProxies: [],
-  activeProxyId: null,
-  autoSwitchProxy: true,
-  roundRobinProxy: false,
-  proxyTestUrl: 'https://www.pixiv.net/artworks/119870733'
+  pixivFilenameFormat: ['authorName', 'illustId']
 };
 
 export class ConfigManager {
@@ -39,28 +34,6 @@ export class ConfigManager {
     return typeof result.notificationsEnabled === 'undefined'
       ? DEFAULTS.notificationsEnabled
       : result.notificationsEnabled;
-  }
-
-  async getProxySettings() {
-    const result = await Storage.getSync([
-      'pixivProxies',
-      'activeProxyId',
-      'autoSwitchProxy',
-      'roundRobinProxy',
-      'proxyTestUrl'
-    ]);
-
-    return {
-      pixivProxies: result.pixivProxies || DEFAULTS.pixivProxies,
-      activeProxyId: result.activeProxyId || DEFAULTS.activeProxyId,
-      autoSwitchProxy: typeof result.autoSwitchProxy === 'undefined'
-        ? DEFAULTS.autoSwitchProxy
-        : result.autoSwitchProxy,
-      roundRobinProxy: typeof result.roundRobinProxy === 'undefined'
-        ? DEFAULTS.roundRobinProxy
-        : result.roundRobinProxy,
-      proxyTestUrl: result.proxyTestUrl || DEFAULTS.proxyTestUrl
-    };
   }
 
   async setSettings(settings) {

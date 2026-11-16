@@ -1,118 +1,221 @@
 {
-  "extensionName": {
-    "message": "下載Twitter和Pixiv原圖",
-    "description": "Name of the extension"
-  },
-  "extensionDescription": {
-    "message": "在Twitter、Pixiv中按讚/收藏時可立即下載原圖，預設檔名為作者+作品ID+時間",
-    "description": "Description of the extension"
-  },
-  "popupTitle": {
-    "message": "檔名格式設定",
-    "description": "Title of the popup settings page"
-  },
-  "twitterLabel": {
-    "message": "Twitter",
-    "description": "Label for Twitter switch"
-  },
-  "pixivLabel": {
-    "message": "Pixiv",
-    "description": "Label for Pixiv switch"
-  },
-  "twitterFormatTitle": {
-    "message": "Twitter檔名格式",
-    "description": "Title for Twitter format section"
-  },
-  "pixivFormatTitle": {
-    "message": "Pixiv檔名格式",
-    "description": "Title for Pixiv format section"
-  },
-  "formatAccount": {
-    "message": "帳號",
-    "description": "Format option for account name"
-  },
-  "formatTweetId": {
-    "message": "推文ID",
-    "description": "Format option for tweet ID"
-  },
-  "formatTweetTime": {
-    "message": "推文時間",
-    "description": "Format option for tweet time"
-  },
-  "formatDownloadDate": {
-    "message": "下載時間",
-    "description": "Format option for download date"
-  },
-  "formatAuthorName": {
-    "message": "作者名稱",
-    "description": "Format option for author name"
-  },
-  "formatAuthorId": {
-    "message": "作者ID",
-    "description": "Format option for author ID"
-  },
-  "formatIllustId": {
-    "message": "作品ID",
-    "description": "Format option for illustration ID"
-  },
-  "exampleTwitterImage": {
-    "message": "Twitter圖片範例",
-    "description": "Example title for Twitter images"
-  },
-  "exampleTwitterVideo": {
-    "message": "Twitter影片範例",
-    "description": "Example title for Twitter videos"
-  },
-  "examplePixiv": {
-    "message": "Pixiv檔名範例",
-    "description": "Example title for Pixiv files"
-  },
-  "saveButton": {
-    "message": "儲存設定",
-    "description": "Save button text"
-  },
-  "saveSuccess": {
-    "message": "儲存成功！",
-    "description": "Success message"
-  },
-  "settingsUpdated": {
-    "message": "設定已更新",
-    "description": "Settings updated message"
-  },
-  "tabSettings": {
-    "message": "設定",
-    "description": "Settings tab label"
-  },
-  "tabLogs": {
-    "message": "日誌",
-    "description": "Logs tab label"
-  },
-  "notificationLabel": {
-    "message": "通知",
-    "description": "Label for notification switch"
-  },
-  "errorLogTitle": {
-    "message": "錯誤日誌",
-    "description": "Title for error logs section"
-  },
-  "logFilterAll": {
-    "message": "所有平台",
-    "description": "Log filter option for all platforms"
-  },
-  "clearLogs": {
-    "message": "清空日誌",
-    "description": "Clear logs button text"
-  },
-  "exportLogs": {
-    "message": "匯出日誌",
-    "description": "Export logs button text"
-  },
-  "noLogs": {
-    "message": "暫無錯誤日誌",
-    "description": "Empty state text when no error logs"
-  },
-  "noLogsToExport": {
-    "message": "暫無日誌可匯出",
-    "description": "Alert message when there are no logs to export"
-  }
+    "extensionName": {
+        "message": "下載Twitter和Pixiv原圖",
+        "description": "Name of the extension"
+    },
+    "extensionDescription": {
+        "message": "在Twitter、Pixiv中按讚/收藏時可立即下載原圖，預設檔名為作者+作品ID+時間",
+        "description": "Description of the extension"
+    },
+    "popupTitle": {
+        "message": "下載設定"
+    },
+    "twitterLabel": {
+        "message": "Twitter",
+        "description": "Label for Twitter switch"
+    },
+    "pixivLabel": {
+        "message": "Pixiv",
+        "description": "Label for Pixiv switch"
+    },
+    "twitterFormatTitle": {
+        "message": "Twitter檔名格式",
+        "description": "Title for Twitter format section"
+    },
+    "pixivFormatTitle": {
+        "message": "Pixiv檔名格式",
+        "description": "Title for Pixiv format section"
+    },
+    "formatAccount": {
+        "message": "帳號",
+        "description": "Format option for account name"
+    },
+    "formatTweetId": {
+        "message": "推文ID",
+        "description": "Format option for tweet ID"
+    },
+    "formatTweetTime": {
+        "message": "推文時間",
+        "description": "Format option for tweet time"
+    },
+    "formatDownloadDate": {
+        "message": "下載時間",
+        "description": "Format option for download date"
+    },
+    "formatAuthorName": {
+        "message": "作者名稱",
+        "description": "Format option for author name"
+    },
+    "formatAuthorId": {
+        "message": "作者ID",
+        "description": "Format option for author ID"
+    },
+    "formatIllustId": {
+        "message": "作品ID",
+        "description": "Format option for illustration ID"
+    },
+    "exampleTwitterImage": {
+        "message": "Twitter圖片範例",
+        "description": "Example title for Twitter images"
+    },
+    "exampleTwitterVideo": {
+        "message": "Twitter影片範例",
+        "description": "Example title for Twitter videos"
+    },
+    "examplePixiv": {
+        "message": "Pixiv檔名範例",
+        "description": "Example title for Pixiv files"
+    },
+    "tabSettings": {
+        "message": "設定",
+        "description": "Settings tab label"
+    },
+    "tabLogs": {
+        "message": "日誌",
+        "description": "Logs tab label"
+    },
+    "notificationLabel": {
+        "message": "通知",
+        "description": "Label for notification switch"
+    },
+    "errorLogTitle": {
+        "message": "錯誤日誌",
+        "description": "Title for error logs section"
+    },
+    "logFilterAll": {
+        "message": "所有平台",
+        "description": "Log filter option for all platforms"
+    },
+    "clearLogs": {
+        "message": "清空日誌",
+        "description": "Clear logs button text"
+    },
+    "exportLogs": {
+        "message": "匯出日誌",
+        "description": "Export logs button text"
+    },
+    "noLogs": {
+        "message": "暫無錯誤日誌",
+        "description": "Empty state text when no error logs"
+    },
+    "noLogsToExport": {
+        "message": "暫無日誌可匯出",
+        "description": "Alert message when there are no logs to export"
+    },
+    "sectionPlatforms": {
+        "message": "平台開關"
+    },
+    "sectionGeneral": {
+        "message": "一般"
+    },
+    "autoSaveHint": {
+        "message": "變更即時生效，自動儲存"
+    },
+    "resetButton": {
+        "message": "還原預設值"
+    },
+    "savedToast": {
+        "message": "設定已儲存"
+    },
+    "exampleMultiPageNote": {
+        "message": "多圖作品會自動附加 _p01 頁碼後綴"
+    },
+    "clearLogsConfirm": {
+        "message": "確定清空所有日誌？"
+    },
+    "logsExportedToast": {
+        "message": "日誌已匯出"
+    },
+    "examplePartAccount": {
+        "message": "範例使用者_"
+    },
+    "examplePartTweetId": {
+        "message": "88669977_"
+    },
+    "examplePartTweetTime": {
+        "message": "20230810_"
+    },
+    "examplePartAuthorName": {
+        "message": "範例作者_"
+    },
+    "examplePartAuthorId": {
+        "message": "12345_"
+    },
+    "examplePartIllustId": {
+        "message": "88669977_"
+    },
+    "examplePartDownloadDate": {
+        "message": "20230811_"
+    },
+    "notifQueuedTitle": {
+        "message": "開始下載"
+    },
+    "notifQueuedImage": {
+        "message": "圖片已加入下載佇列"
+    },
+    "notifQueuedVideo": {
+        "message": "影片已加入下載佇列"
+    },
+    "notifRetryTitle": {
+        "message": "下載重試中"
+    },
+    "notifRetryGeneric": {
+        "message": "網路不穩導致失敗，正在重試…"
+    },
+    "notifRetryTwitter": {
+        "message": "Twitter 圖片正在重試…"
+    },
+    "notifRetryPixiv": {
+        "message": "Pixiv 圖片正在重試…"
+    },
+    "notifFailedTitle": {
+        "message": "下載失敗"
+    },
+    "notifFailedMessage": {
+        "message": "下載失敗：$ERROR$",
+        "placeholders": {
+            "error": {
+                "content": "$1"
+            }
+        }
+    },
+    "notifBatchTitle": {
+        "message": "批次下載中"
+    },
+    "notifBatchProgress": {
+        "message": "已完成 $CURRENT$/$TOTAL$",
+        "placeholders": {
+            "current": {
+                "content": "$1"
+            },
+            "total": {
+                "content": "$2"
+            }
+        }
+    },
+    "notifBatchDoneTitle": {
+        "message": "批次下載完成"
+    },
+    "notifBatchDoneMessage": {
+        "message": "共 $COUNT$ 個檔案已加入佇列",
+        "placeholders": {
+            "count": {
+                "content": "$1"
+            }
+        }
+    },
+    "notifInterruptedTitle": {
+        "message": "下載已中斷"
+    },
+    "notifInterruptedMessage": {
+        "message": "$FILE$：$ERROR$",
+        "placeholders": {
+            "file": {
+                "content": "$1"
+            },
+            "error": {
+                "content": "$2"
+            }
+        }
+    }
 }

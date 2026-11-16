@@ -1,19 +1,16 @@
 /**
- * ProxyManager - 简化版（硬编码代理）
- * 直接使用固定的代理域名，无需配置
+ * ProxyManager - 内置代理（产品决策：不提供用户配置入口，降低使用门槛）
+ * 使用固定的 Cloudflare 反代域名转发 i.pximg.net 原图请求（绕过防盗链与 CORS）。
+ * 反代不可用时由 downloadWithFallback 回退到 i.pximg.net 直连。
  */
 export class ProxyManager {
   constructor() {
-    // 硬编码代理域名 - 请替换为你自己的 Cloudflare 反代域名
-    // 格式示例: pixiv.example.com
-    // 本地开发：填入你自己的反代
-    // 应用商店发布：临时改回 'YOUR_PROXY_DOMAIN_HERE'，让用户自行配置
+    // 内置代理域名，用户无需任何配置
     this.proxyDomain = 'pixiv.zhongrui.app';
   }
 
   async load() {
-    // 不再从存储加载配置
-    // 直接返回成功，保持接口兼容性
+    // 保持接口兼容性：代理为内置固定值，无需从存储加载
     return Promise.resolve();
   }
 

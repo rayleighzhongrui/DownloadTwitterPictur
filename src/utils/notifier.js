@@ -1,24 +1,14 @@
-export class Notifier {
-  static showSuccess(title, message, options = {}) {
-    chrome.notifications.create({
-      type: 'basic',
-      iconUrl: 'images/icon.png',
-      title,
-      message,
-      requireInteraction: false,
-      ...options
-    });
-  }
+import { t } from './i18n.js';
 
-  static showError(title, error, actionUrl = null) {
+const PROGRESS_ID = 'batch-progress';
+
+export class Notifier {
+  static showSuccess(title, message) {
     chrome.notifications.create({
       type: 'basic',
       iconUrl: 'images/icon.png',
       title,
-      message: `下载失败：${error?.message || error}`,
-      requireInteraction: true,
-      buttons: actionUrl ? [{ title: '查看详情' }] : [],
-      priority: 2
+      message
     });
   }
 
@@ -28,20 +18,39 @@ export class Notifier {
       iconUrl: 'images/icon.png',
       title,
       message,
-      requireInteraction: false,
       priority: 1
     });
   }
 
-  // 进度通知使用固定 ID，避免批量下载时反复弹出新通知刷屏。
-  // 用 update 而不是 create，Chrome 会复用同一条通知刷新进度。
+  static showError(title, message) {
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'images/icon.png',
+      title,
+      message,
+      requireInteraction: true,
+      priority: 2
+    });
+  }
+
+  // 进度通知使用固定 ID 复用同一条通知，避免批量下载时刷屏。
+  // update 的目标不存在时（首次或通知被用户关闭）回退到 create。
   static showProgress(current, total) {
-    chrome.notifications.update('progress-batch', {
+    const options = {
       type: 'progress',
       iconUrl: 'images/icon.png',
-      title: '批量下载中',
-      message: `已完成 ${current}/${total}`,
-      progress: Math.round((current / total) * 100)
+      title: t('notifBatchTitle', [], '批量下载中'),
+      message: t('notifBatchProgress', [String(current), String(total)], `已完成 ${current}/${total}`),
+      progress: total > 0 ? Math.round((current / total) * 100) : 0
+    };
+    chrome.notifications.update(PROGRESS_ID, options, wasUpdated => {
+      if (chrome.runtime.lastError || !wasUpdated) {
+        chrome.notifications.create(PROGRESS_ID, options);
+      }
     });
+  }
+
+  static clearProgress() {
+    chrome.notifications.clear(PROGRESS_ID);
   }
 }
