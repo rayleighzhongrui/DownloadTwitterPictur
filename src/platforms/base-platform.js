@@ -24,7 +24,12 @@ export class BasePlatform {
       platform: this.name,
       action: context?.action || 'unknown',
       url: context?.url || '',
+      // 日志全局共享，保留实际出错站点；不记录查询参数或 hash 中的敏感信息。
+      pageUrl: typeof window !== 'undefined'
+        ? `${window.location.origin}${window.location.pathname}` : '',
+      extensionVersion: globalThis.chrome?.runtime?.getManifest?.()?.version || '',
       error: error?.message || String(error),
+      stack: error?.stack?.slice(0, 4000) || '',
       retryCount: context?.retryCount || 0,
       success: false
     });

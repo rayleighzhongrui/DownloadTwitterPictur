@@ -111,7 +111,8 @@ npm run build
 ```bash
 npm run build     # 构建项目（生成 content.js）
 npm run dev      # 开发模式（监听文件变化，自动构建）
-npm run release  # 创建发布包（上传到 Chrome 商店）
+npm run check    # lint + 全量自动测试 + 构建
+npm run release  # 先执行 check，再创建并校验发布包（不会自动上传）
 ```
 
 ### 架构说明
@@ -132,18 +133,20 @@ Chrome 的 Content Scripts 不支持 ES6 modules 的 import，所以需要打包
 ### 发布流程
 
 ```bash
-# 1. 确保代码已测试
-npm run build
-
-# 2. 创建发布包
+# 1. 测试、构建、打包及包内字节/版本校验（任一步失败即停止）
 npm run release
 
-# 3. 检查生成的 .zip 文件
-# 输出: DownloadTwitterPicture-v1.0.zip
+# 2. 按 docs/VALIDATION.md 验证真实浏览器与下载链路，不能用 mock 代替真实验收
 
-# 4. 上传到 Chrome Web Store
+# 3. 上传 DownloadTwitterPicture-v<版本>.zip 到 Chrome Web Store
 # 访问: https://chrome.google.com/webstore/devconsole
-# 上传 .zip 文件
+# 核对草稿版本，提交审核，并记录实际状态（待审核不等于已上线）
+
+# 4. 提交源码与构建产物，推送 Gitea；不能只上传 ZIP 忘记同步源码
+# git add <本次发布文件>
+# git commit -m "fix: ..."
+# git push origin main
+# git tag v<版本> && git push origin v<版本>
 ```
 
 ### 发布包内容
@@ -253,6 +256,15 @@ npm run release
 ---
 
 ## 📝 更新日志
+
+### v1.4.1
+- 🐛 按网站域名隔离 Twitter/Pixiv 处理逻辑，避免 Twitter 点击触发 Pixiv 报错
+- 🐛 Pixiv 收藏按钮必须具有明确标识，不再把任意 SVG 按钮当成收藏
+- 🐛 修复作品链接选择器；移除全页首链接猜测，无法确定作品时安全停止
+- 🐛 重新读取 SPA 卡片链接，区分详情页推荐作品与当前主作品
+- 🐛 Pixiv 原图直连不再被跨域 HEAD 预检阻断
+- 🔎 本地错误日志补充页面路径、扩展版本和调用栈，页面查询参数不入日志
+- 🧪 新增跨站、按钮识别、作品关联与下载回退回归测试；打包强制检查、测试和版本校验
 
 ### v1.4.0 (2026-10-05)
 - ✨ 弹窗设置自动保存，去掉手动保存按钮与全屏提示遮罩

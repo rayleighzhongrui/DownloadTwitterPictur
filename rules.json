@@ -9,7 +9,7 @@
       ]
     },
     "condition": {
-      "urlFilter": "i.pximg.net",
+      "urlFilter": "||i.pximg.net/",
       "resourceTypes": ["xmlhttprequest"]
     }
   },
@@ -23,7 +23,7 @@
       ]
     },
     "condition": {
-      "urlFilter": "i.pximg.net",
+      "urlFilter": "||i.pximg.net/",
       "resourceTypes": ["xmlhttprequest"]
     }
   }

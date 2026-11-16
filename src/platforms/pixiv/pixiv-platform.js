@@ -2,31 +2,47 @@ import { BasePlatform } from '../base-platform.js';
 import { findPixivBookmarkButton, findArtworkContainer } from './pixiv-detector.js';
 import { fetchIllustMeta, fetchIllustPages } from './pixiv-api.js';
 import { ProxyManager } from '../../core/proxy-manager.js';
-import { pixivCache } from '../../utils/pixiv-dom-cache.js';
+import { getPlatformForHost } from '../../core/platform-host.js';
 import { mapLimit } from '../../utils/concurrency.js';
 import { t } from '../../utils/i18n.js';
 
 const DOWNLOAD_CONCURRENCY = 3;
 
-const ILLUST_ID_RE = /\/artworks\/(\d+)/;
+const ILLUST_ID_RE = /^\/(?:[a-z]{2}\/)?artworks\/(\d+)(?:\/|$)/;
 const DEBUG = false; // 生产环境关闭详细调试日志
 
-// 提取作品 ID：
-// 1. DOM 缓存里的 artwork 链接
-// 2. 当前页 URL 路径（详情页）
-// 3. 兜底扫描 document 全局的 artwork 链接（推荐流容器可能不含链接）
-function extractIllustId(target, metadata) {
-  const fromLink = metadata?.links?.[0]?.href.match(ILLUST_ID_RE)?.[1];
-  if (fromLink) return fromLink;
-  const fromTarget = target?.href?.match(ILLUST_ID_RE)?.[1];
+function idFromLink(link) {
+  if (!link?.href) return null;
+  try {
+    const url = new URL(link.href, window.location.href);
+    return getPlatformForHost(url.hostname) === 'pixiv'
+      ? url.pathname.match(ILLUST_ID_RE)?.[1] || null
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+// 只从点击目标关联的信息取 ID，不扫描全页首链接猜测作品。
+function extractIllustId(target, container) {
+  // 只有明确的主作品按钮才能使用详情 URL；推荐区不能借用主作品 ID。
+  if (target.classList.contains('gtm-main-bookmark')) {
+    return window.location.pathname.match(ILLUST_ID_RE)?.[1] || null;
+  }
+  const fromTarget = idFromLink(target.closest('a[href*="/artworks/"]'));
   if (fromTarget) return fromTarget;
-  const fromUrl = window.location.pathname.match(ILLUST_ID_RE)?.[1];
-  if (fromUrl) return fromUrl;
-  // 最后兜底：页面任意 artwork 链接
-  const anyLink = document.querySelector('a[href*=”/artworks/”]');
-  if (anyLink) {
-    const m = anyLink.href.match(ILLUST_ID_RE);
-    if (m) return m[1];
+
+  if (container && container !== document.body) {
+    // SPA 可能复用卡片节点并替换链接，不能使用旧的 metadata.links 快照。
+    const ids = new Set(Array.from(container.querySelectorAll('a[href*="/artworks/"]'))
+      .map(idFromLink).filter(Boolean));
+    if (ids.size === 1) return ids.values().next().value;
+    if (ids.size > 1) return null;
+    // 无链接卡片可以用自身实体 ID；不能借用包住整个详情页的实体属性。
+    const entity = target.closest('[data-ga4-entity-id^="illust/"]');
+    if (entity && container.contains(entity)) {
+      return entity.getAttribute('data-ga4-entity-id').match(/^illust\/(\d+)$/)?.[1] || null;
+    }
   }
   return null;
 }
@@ -59,9 +75,7 @@ export class PixivPlatform extends BasePlatform {
     await this.proxyManager.load();
 
     const container = findArtworkContainer(bookmarkButton);
-    const metadata = container ? pixivCache.getContainerMetadata(container) : null;
-
-    const illustId = extractIllustId(bookmarkButton, metadata);
+    const illustId = extractIllustId(bookmarkButton, container);
     if (DEBUG) console.log('[Pixiv] illustId =', illustId);
     if (!illustId) {
       await this.handleError(new Error('未找到 illustId'), { action: 'detectIllustId' });
@@ -125,7 +139,7 @@ export class PixivPlatform extends BasePlatform {
   // 图片下载走反代优先：i.pximg.net 有防盗链（校验 Referer），
   // content script 里对它的 HEAD 请求是跨域 fetch，必然被 CORS 拦截。
   // 反代（Cloudflare Worker）服务端带 Referer 转发并返回 CORS 头，是可靠路径。
-  // 反代失败时才回退原图直连（chrome.downloads 的下载不受 CORS 限制）。
+  // 反代失败时由后台带 Referer 获取原图，再交给 chrome.downloads 落盘。
   async downloadWithFallback(originalUrl, metadata) {
     const tried = new Set();
     const proxyDomain = this.proxyManager.getProxyDomain();
@@ -155,11 +169,15 @@ export class PixivPlatform extends BasePlatform {
 
   async downloadImage(url, metadata) {
     const attemptDownload = async (imageUrl) => {
-      const response = await fetch(imageUrl, { method: 'HEAD' });
-      if (!response.ok) {
-        const error = new Error(`HTTP ${response.status}`);
-        error.status = response.status;
-        throw error;
+      // 不用 content-script 的跨域 HEAD 阻断直连；由后台 fetch + downloads
+      // 处理 Referer 和原图字节，下载中断仍由 downloads.onChanged 统一记录。
+      if (new URL(imageUrl).hostname !== 'i.pximg.net') {
+        const response = await fetch(imageUrl, { method: 'HEAD' });
+        if (!response.ok) {
+          const error = new Error(`HTTP ${response.status}`);
+          error.status = response.status;
+          throw error;
+        }
       }
       await this.downloader.downloadImage({
         url: imageUrl,

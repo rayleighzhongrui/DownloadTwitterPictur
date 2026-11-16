@@ -249,11 +249,12 @@ async function loadLogs() {
 
     item.append(header, action, error);
 
-    if (log.url) {
+    const logUrl = log.pageUrl || log.url;
+    if (logUrl) {
       const url = document.createElement('div');
       url.className = 'log-url';
-      url.textContent = log.url.length > 120 ? `${log.url.slice(0, 120)}…` : log.url;
-      url.title = log.url;
+      url.textContent = logUrl.length > 120 ? `${logUrl.slice(0, 120)}…` : logUrl;
+      url.title = logUrl;
       item.appendChild(url);
     }
 

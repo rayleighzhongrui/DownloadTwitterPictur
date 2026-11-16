@@ -318,6 +318,26 @@
     }
   };
 
+  // src/core/pixiv-original.js
+  async function fetchPixivOriginalDataUrl(url) {
+    const response = await fetch(url);
+    if (!response.ok) {
+      const error = new Error(`HTTP ${response.status}`);
+      error.status = response.status;
+      throw error;
+    }
+    const mime = (response.headers.get("content-type") || "").split(";")[0].trim();
+    if (!mime.startsWith("image/") && mime !== "application/octet-stream") {
+      throw new Error("Pixiv original response is not an image");
+    }
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 32768) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 32768));
+    }
+    return `data:${mime};base64,${btoa(binary)}`;
+  }
+
   // src/background.js
   var configManager = new ConfigManager();
   var filenameGenerator = new FilenameGenerator();
@@ -364,15 +384,21 @@
       url: request.url,
       resolution: request.resolution
     });
-    const downloadTask = () => new Promise((resolve, reject) => {
-      chrome.downloads.download({ url: request.url, filename }, (downloadId) => {
-        if (chrome.runtime.lastError) {
-          const error = new Error(chrome.runtime.lastError.message);
-          return reject(error);
-        }
-        resolve(downloadId);
+    let downloadUrl;
+    const downloadTask = async () => {
+      if (!downloadUrl) {
+        downloadUrl = request.platform === "pixiv" && new URL(request.url).hostname === "i.pximg.net" ? await fetchPixivOriginalDataUrl(request.url) : request.url;
+      }
+      return new Promise((resolve, reject) => {
+        chrome.downloads.download({ url: downloadUrl, filename, saveAs: false }, (downloadId) => {
+          if (chrome.runtime.lastError) {
+            const error = new Error(chrome.runtime.lastError.message);
+            return reject(error);
+          }
+          resolve(downloadId);
+        });
       });
-    });
+    };
     const isBatchItem = Number(request.pageTotal) > 1;
     try {
       const downloadId = await retryManager.retry(downloadTask, {
@@ -466,7 +492,14 @@
       });
     }
     if (request.action === "downloadProgress") {
-      handleDownloadProgress(request);
+      ensureHydrated().then(() => {
+        if (configCache.notificationsEnabled) {
+          handleDownloadProgress(request);
+        } else {
+          batchProgress.clear();
+          Notifier.clearProgress();
+        }
+      });
     }
   });
   chrome.downloads.onChanged.addListener((delta) => {

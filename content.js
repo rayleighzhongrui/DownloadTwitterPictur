@@ -226,7 +226,11 @@
         platform: this.name,
         action: context?.action || "unknown",
         url: context?.url || "",
+        // 日志全局共享，保留实际出错站点；不记录查询参数或 hash 中的敏感信息。
+        pageUrl: typeof window !== "undefined" ? `${window.location.origin}${window.location.pathname}` : "",
+        extensionVersion: globalThis.chrome?.runtime?.getManifest?.()?.version || "",
         error: error?.message || String(error),
+        stack: error?.stack?.slice(0, 4e3) || "",
         retryCount: context?.retryCount || 0,
         success: false
       });
@@ -727,7 +731,7 @@
         this.stats.cacheMisses += 1;
         return null;
       }
-      if (!document.body.contains(container)) {
+      if (!document.body.contains(container) || !container.contains(button)) {
         this.buttonCache.delete(button);
         this.stats.cacheMisses += 1;
         return null;
@@ -764,185 +768,81 @@
   };
   var pixivCache = new PixivDOMCache();
 
+  // src/core/platform-host.js
+  function getPlatformForHost(hostname) {
+    const host = String(hostname || "").toLowerCase();
+    const matches = (domain) => host === domain || host.endsWith(`.${domain}`);
+    if (matches("twitter.com") || matches("x.com"))
+      return "twitter";
+    if (matches("pixiv.net"))
+      return "pixiv";
+    return null;
+  }
+
   // src/platforms/pixiv/pixiv-detector.js
   var BOOKMARK_HINTS = [
-    // 日文
     "\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u306B\u8FFD\u52A0",
     "\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u6E08\u307F",
     "\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u89E3\u9664",
-    // 中文
     "\u6536\u85CF",
     "\u5DF2\u6536\u85CF",
     "\u53D6\u6D88\u6536\u85CF",
     "\u6DFB\u52A0\u6536\u85CF",
-    // 英文
     "bookmark",
-    "Bookmark",
     "add bookmark",
     "remove bookmark",
-    "Add to bookmarks"
+    "add to bookmarks"
   ];
-  function matchesBookmarkHint(text) {
-    if (!text)
+  function isBookmarkElement(element) {
+    if (!element || element.nodeType !== 1)
       return false;
-    const lower = String(text).toLowerCase();
-    return BOOKMARK_HINTS.some((hint) => lower.includes(hint.toLowerCase()));
-  }
-  function isBookmarkElement(el) {
-    if (!el || el.nodeType !== 1)
-      return false;
-    if (matchesBookmarkHint(el.getAttribute?.("aria-label")))
-      return true;
-    if (matchesBookmarkHint(el.getAttribute?.("title")))
-      return true;
-    if (matchesBookmarkHint(el.getAttribute?.("data-ga4-label")))
-      return true;
-    const cls = el.className && typeof el.className === "string" ? el.className : "";
-    if (/bookmark/i.test(cls))
-      return true;
-    return false;
+    const hints = ["aria-label", "title", "data-ga4-label"].map((name) => element.getAttribute(name) || "");
+    hints.push(typeof element.className === "string" ? element.className : "");
+    return hints.some((text) => BOOKMARK_HINTS.some((hint) => text.toLowerCase().includes(hint.toLowerCase())));
   }
   function findPixivBookmarkButton(target) {
-    let el = target;
-    while (el && el !== document.body) {
-      if (isBookmarkElement(el)) {
-        if (el.tagName === "BUTTON" || el.getAttribute?.("role") === "button")
-          return el;
-        const inner = el.querySelector?.('button, [role="button"]');
-        if (inner && isBookmarkElement(inner))
-          return inner;
-        return el;
-      }
-      el = el.parentElement;
+    if (getPlatformForHost(window.location.hostname) !== "pixiv")
+      return null;
+    const element = target?.nodeType === 1 ? target : target?.parentElement;
+    const button = element?.closest?.('button, [role="button"]');
+    if (!button || button.disabled || button.getAttribute("aria-disabled") === "true")
+      return null;
+    let current = element;
+    while (current) {
+      if (isBookmarkElement(current))
+        return button;
+      if (current === button)
+        break;
+      current = current.parentElement;
     }
-    let button = target.closest('[data-ga4-label="bookmark_button"]');
-    if (button)
+    if (button.parentElement?.getAttribute("data-ga4-label") === "bookmark_button")
       return button;
-    button = target.closest("button");
-    if (button && isLikelyBookmarkButton(button))
-      return button;
-    return null;
-  }
-  function isLikelyBookmarkButton(button) {
-    const buttonText = button.textContent.trim();
-    const isFollowButton = buttonText.includes("\u5173\u6CE8") || buttonText.includes("\u30D5\u30A9\u30ED\u30FC") || buttonText.includes("follow");
-    if (isFollowButton)
-      return false;
-    if (!button.querySelector("svg"))
-      return false;
-    return true;
+    const heartPrefix = "M21,5.5C24.8659932,5.528,8.6340067528,12.5C28,18.2694439";
+    const hasPixivHeart = Array.from(button.querySelectorAll('svg[viewBox="0 0 32 32"] path[d]')).some((path) => path.getAttribute("d").replace(/\s+/g, "").startsWith(heartPrefix));
+    return hasPixivHeart ? button : null;
   }
   function findArtworkContainer(bookmarkButton) {
     const cached = pixivCache.getContainer(bookmarkButton);
-    if (cached) {
+    if (cached)
       return cached;
-    }
-    if (window.location.pathname.startsWith("/artworks/")) {
-      return document.body;
-    }
-    let container;
-    if (isRecommendationFeed(bookmarkButton)) {
-      container = findRecommendationArtworkContainer(bookmarkButton);
-    } else {
-      container = findFollowingArtworkContainer(bookmarkButton);
-    }
-    if (container) {
-      pixivCache.setContainer(bookmarkButton, container);
-    }
-    return container;
-  }
-  function isRecommendationFeed(bookmarkButton) {
-    const workContentContainer = bookmarkButton.closest('[data-ga4-label="work_content"]');
-    if (workContentContainer) {
-      return true;
-    }
-    const container = bookmarkButton.closest("div");
-    if (!container)
-      return false;
-    const hasRecommendationText = container.textContent.includes("\u5176\u4ED6\u4F5C\u54C1") || container.textContent.includes("\u7684\u5176\u4ED6\u4F5C\u54C1") || container.querySelector('[class*="recommend"], [class*="suggest"]');
-    const bookmarkButtonsCount = container.querySelectorAll('button[data-ga4-label="bookmark_button"]').length;
-    const hasMultipleBookmarks = bookmarkButtonsCount > 3;
-    const mainImg = container.querySelector("img");
-    const isLargeImage = mainImg && (mainImg.offsetWidth > 300 || mainImg.offsetHeight > 300);
-    return Boolean(hasRecommendationText || hasMultipleBookmarks || isLargeImage);
-  }
-  function findFollowingArtworkContainer(bookmarkButton) {
-    let container = bookmarkButton.closest("li");
-    if (container && container.querySelector("img") && container.querySelector('a[href*="/artworks/"]')) {
-      return container;
-    }
-    const scContainers = ['[class*="sc-"]', '[class*="gtm-"]'];
-    for (const selector of scContainers) {
-      container = bookmarkButton.closest(selector);
-      if (container && container.querySelector("img") && container.querySelector('a[href*="/artworks/"]')) {
-        return container;
-      }
-    }
     let current = bookmarkButton.parentElement;
     while (current && current !== document.body) {
-      const hasImage = current.querySelector("img");
-      const hasLink = current.querySelector('a[href*="/artworks/"]');
-      if (hasImage && hasLink) {
+      const hasArtworkLink = current.querySelector('a[href*="/artworks/"]');
+      const entityId = current.getAttribute("data-ga4-entity-id");
+      if (hasArtworkLink || /^illust\/\d+$/.test(entityId || "")) {
+        let bookmarks = 0;
+        for (const control of current.querySelectorAll('button, [role="button"]')) {
+          if (findPixivBookmarkButton(control) === control)
+            bookmarks += 1;
+          if (bookmarks > 1)
+            return null;
+        }
+        pixivCache.setContainer(bookmarkButton, current);
         return current;
       }
       current = current.parentElement;
     }
     return null;
-  }
-  function findRecommendationArtworkContainer(bookmarkButton) {
-    const allImages = Array.from(document.getElementsByTagName("img"));
-    const allLinks = Array.from(document.querySelectorAll('a[href*="/artworks/"]'));
-    const allButtons = Array.from(document.querySelectorAll('button[data-ga4-label="bookmark_button"]'));
-    let current = bookmarkButton;
-    let attempts = 0;
-    while (current && current !== document.body && attempts < 8) {
-      current = current.parentElement;
-      attempts += 1;
-      if (!current)
-        break;
-      const imageCount = countContained(allImages, current, 1);
-      const linkCount = countContained(allLinks, current, 3);
-      const buttonInfo = countButtons(allButtons, current, bookmarkButton, 2);
-      if (imageCount > 0 && linkCount > 0 && buttonInfo.count === 1 && buttonInfo.matches) {
-        return current;
-      }
-      const entityId = current.getAttribute("data-ga4-entity-id");
-      if (entityId && entityId.startsWith("illust/")) {
-        if (imageCount > 0 && linkCount > 0) {
-          return current;
-        }
-      }
-      if (imageCount > 0 && linkCount > 0 && linkCount <= 2) {
-        return current;
-      }
-    }
-    return findFollowingArtworkContainer(bookmarkButton);
-  }
-  function countContained(nodes, container, maxCount) {
-    let count = 0;
-    for (const node of nodes) {
-      if (!container.contains(node))
-        continue;
-      count += 1;
-      if (maxCount && count >= maxCount)
-        break;
-    }
-    return count;
-  }
-  function countButtons(nodes, container, targetButton, maxCount) {
-    let count = 0;
-    let matches = false;
-    for (const node of nodes) {
-      if (!container.contains(node))
-        continue;
-      count += 1;
-      if (node === targetButton || node.contains(targetButton)) {
-        matches = true;
-      }
-      if (maxCount && count >= maxCount)
-        break;
-    }
-    return { count, matches };
   }
 
   // src/platforms/pixiv/pixiv-api.js
@@ -993,23 +893,35 @@
 
   // src/platforms/pixiv/pixiv-platform.js
   var DOWNLOAD_CONCURRENCY2 = 3;
-  var ILLUST_ID_RE = /\/artworks\/(\d+)/;
+  var ILLUST_ID_RE = /^\/(?:[a-z]{2}\/)?artworks\/(\d+)(?:\/|$)/;
   var DEBUG = false;
-  function extractIllustId(target, metadata) {
-    const fromLink = metadata?.links?.[0]?.href.match(ILLUST_ID_RE)?.[1];
-    if (fromLink)
-      return fromLink;
-    const fromTarget = target?.href?.match(ILLUST_ID_RE)?.[1];
+  function idFromLink(link) {
+    if (!link?.href)
+      return null;
+    try {
+      const url = new URL(link.href, window.location.href);
+      return getPlatformForHost(url.hostname) === "pixiv" ? url.pathname.match(ILLUST_ID_RE)?.[1] || null : null;
+    } catch {
+      return null;
+    }
+  }
+  function extractIllustId(target, container) {
+    if (target.classList.contains("gtm-main-bookmark")) {
+      return window.location.pathname.match(ILLUST_ID_RE)?.[1] || null;
+    }
+    const fromTarget = idFromLink(target.closest('a[href*="/artworks/"]'));
     if (fromTarget)
       return fromTarget;
-    const fromUrl = window.location.pathname.match(ILLUST_ID_RE)?.[1];
-    if (fromUrl)
-      return fromUrl;
-    const anyLink = document.querySelector("a[href*=\u201D/artworks/\u201D]");
-    if (anyLink) {
-      const m = anyLink.href.match(ILLUST_ID_RE);
-      if (m)
-        return m[1];
+    if (container && container !== document.body) {
+      const ids = new Set(Array.from(container.querySelectorAll('a[href*="/artworks/"]')).map(idFromLink).filter(Boolean));
+      if (ids.size === 1)
+        return ids.values().next().value;
+      if (ids.size > 1)
+        return null;
+      const entity = target.closest('[data-ga4-entity-id^="illust/"]');
+      if (entity && container.contains(entity)) {
+        return entity.getAttribute("data-ga4-entity-id").match(/^illust\/(\d+)$/)?.[1] || null;
+      }
     }
     return null;
   }
@@ -1037,8 +949,7 @@
         console.log("[Pixiv] handleAction start", bookmarkButton);
       await this.proxyManager.load();
       const container = findArtworkContainer(bookmarkButton);
-      const metadata = container ? pixivCache.getContainerMetadata(container) : null;
-      const illustId = extractIllustId(bookmarkButton, metadata);
+      const illustId = extractIllustId(bookmarkButton, container);
       if (DEBUG)
         console.log("[Pixiv] illustId =", illustId);
       if (!illustId) {
@@ -1098,7 +1009,7 @@
     // 图片下载走反代优先：i.pximg.net 有防盗链（校验 Referer），
     // content script 里对它的 HEAD 请求是跨域 fetch，必然被 CORS 拦截。
     // 反代（Cloudflare Worker）服务端带 Referer 转发并返回 CORS 头，是可靠路径。
-    // 反代失败时才回退原图直连（chrome.downloads 的下载不受 CORS 限制）。
+    // 反代失败时由后台带 Referer 获取原图，再交给 chrome.downloads 落盘。
     async downloadWithFallback(originalUrl, metadata) {
       const tried = /* @__PURE__ */ new Set();
       const proxyDomain = this.proxyManager.getProxyDomain();
@@ -1124,11 +1035,13 @@
     }
     async downloadImage(url, metadata) {
       const attemptDownload = async (imageUrl) => {
-        const response = await fetch(imageUrl, { method: "HEAD" });
-        if (!response.ok) {
-          const error = new Error(`HTTP ${response.status}`);
-          error.status = response.status;
-          throw error;
+        if (new URL(imageUrl).hostname !== "i.pximg.net") {
+          const response = await fetch(imageUrl, { method: "HEAD" });
+          if (!response.ok) {
+            const error = new Error(`HTTP ${response.status}`);
+            error.status = response.status;
+            throw error;
+          }
         }
         await this.downloader.downloadImage({
           url: imageUrl,
@@ -1180,7 +1093,8 @@
       });
     }
     updatePlatforms({ twitterSwitchActive, pixivSwitchActive }) {
-      if (twitterSwitchActive) {
+      const platform = getPlatformForHost(window.location.hostname);
+      if (platform === "twitter" && twitterSwitchActive) {
         if (!this.platforms.has("twitter")) {
           this.platforms.set("twitter", new TwitterPlatform({
             downloader: this.downloader,
@@ -1190,7 +1104,7 @@
       } else {
         this.platforms.delete("twitter");
       }
-      if (pixivSwitchActive) {
+      if (platform === "pixiv" && pixivSwitchActive) {
         if (!this.platforms.has("pixiv")) {
           this.platforms.set("pixiv", new PixivPlatform({
             downloader: this.downloader,

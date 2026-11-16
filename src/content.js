@@ -4,6 +4,7 @@ import { RetryManager } from './utils/retry.js';
 import { ProxyManager } from './core/proxy-manager.js';
 import { TwitterPlatform } from './platforms/twitter/twitter-platform.js';
 import { PixivPlatform } from './platforms/pixiv/pixiv-platform.js';
+import { getPlatformForHost } from './core/platform-host.js';
 
 class ContentScript {
   constructor() {
@@ -35,7 +36,8 @@ class ContentScript {
   }
 
   updatePlatforms({ twitterSwitchActive, pixivSwitchActive }) {
-    if (twitterSwitchActive) {
+    const platform = getPlatformForHost(window.location.hostname);
+    if (platform === 'twitter' && twitterSwitchActive) {
       if (!this.platforms.has('twitter')) {
         this.platforms.set('twitter', new TwitterPlatform({
           downloader: this.downloader,
@@ -46,7 +48,7 @@ class ContentScript {
       this.platforms.delete('twitter');
     }
 
-    if (pixivSwitchActive) {
+    if (platform === 'pixiv' && pixivSwitchActive) {
       if (!this.platforms.has('pixiv')) {
         this.platforms.set('pixiv', new PixivPlatform({
           downloader: this.downloader,

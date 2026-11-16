@@ -56,7 +56,7 @@ export class PixivDOMCache {
       return null;
     }
 
-    if (!document.body.contains(container)) {
+    if (!document.body.contains(container) || !container.contains(button)) {
       this.buttonCache.delete(button);
       this.stats.cacheMisses += 1;
       return null;

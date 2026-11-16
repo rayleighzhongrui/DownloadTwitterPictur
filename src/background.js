@@ -5,6 +5,7 @@ import { Notifier } from './utils/notifier.js';
 import { ErrorLogger } from './utils/error-logger.js';
 import { resolveExtension } from './utils/file-type.js';
 import { t } from './utils/i18n.js';
+import { fetchPixivOriginalDataUrl } from './core/pixiv-original.js';
 
 const configManager = new ConfigManager();
 const filenameGenerator = new FilenameGenerator();
@@ -63,15 +64,23 @@ async function downloadWithRetry(request, type) {
     resolution: request.resolution
   });
 
-  const downloadTask = () => new Promise((resolve, reject) => {
-    chrome.downloads.download({ url: request.url, filename }, downloadId => {
-      if (chrome.runtime.lastError) {
-        const error = new Error(chrome.runtime.lastError.message);
-        return reject(error);
-      }
-      resolve(downloadId);
+  let downloadUrl;
+  const downloadTask = async () => {
+    if (!downloadUrl) {
+      downloadUrl = request.platform === 'pixiv' && new URL(request.url).hostname === 'i.pximg.net'
+        ? await fetchPixivOriginalDataUrl(request.url)
+        : request.url;
+    }
+    return new Promise((resolve, reject) => {
+      chrome.downloads.download({ url: downloadUrl, filename, saveAs: false }, downloadId => {
+        if (chrome.runtime.lastError) {
+          const error = new Error(chrome.runtime.lastError.message);
+          return reject(error);
+        }
+        resolve(downloadId);
+      });
     });
-  });
+  };
 
   // 多图批次不发逐张通知，由进度通知统一展示
   const isBatchItem = Number(request.pageTotal) > 1;
@@ -178,7 +187,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === 'downloadProgress') {
-    handleDownloadProgress(request);
+    ensureHydrated().then(() => {
+      if (configCache.notificationsEnabled) {
+        handleDownloadProgress(request);
+      } else {
+        batchProgress.clear();
+        Notifier.clearProgress();
+      }
+    });
   }
 });
 

@@ -13,6 +13,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { verifyRelease } = require('./verify-release.js');
 
 // 配置
 const CONFIG = {
@@ -107,15 +108,13 @@ function checkFilesExist() {
 }
 
 /**
- * 构建项目
+ * 检查、测试并构建；任一步失败都不得创建发布包。
  */
 function buildProject() {
-  console.log('🔨 开始构建项目...');
+  console.log('🔨 开始发布前检查、测试与构建...');
 
   try {
-    // 调用 build.config.js
-    const buildScript = path.join(process.cwd(), 'build.config.js');
-    execSync(`node "${buildScript}"`, {
+    execSync('npm run check', {
       stdio: 'inherit',
       cwd: process.cwd()
     });
@@ -168,6 +167,9 @@ function createReleasePackage() {
     if (!fs.existsSync(zipPath)) {
       throw new Error('zip 文件未生成');
     }
+
+    // 检查压缩包内实际字节、版本和运行时文件，避免上传旧构建。
+    verifyRelease(zipPath);
 
     // 显示 zip 文件信息
     const stats = fs.statSync(zipPath);

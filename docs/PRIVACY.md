@@ -1,6 +1,6 @@
 # Privacy Policy — Download Twitter & Pixiv Original Images
 
-_Last updated: 2026-10-04 · Applies to version 1.3.x and later_
+_Last updated: 2026-11-16 · Applies to version 1.4.x and later_
 
 ## Summary
 
@@ -11,7 +11,7 @@ _Last updated: 2026-10-04 · Applies to version 1.3.x and later_
 | Data | Where | Purpose |
 |---|---|---|
 | Filename format preferences, platform on/off switches, notification toggle | `chrome.storage.sync` (the user's own Chrome profile) | Remembers the user's settings. Synced only through the user's own Chrome account — never sent to the developer. |
-| Error logs (failed URL, error message, timestamp) | `chrome.storage.local` (device only) | Lets the user review and export download failures from the popup. Never leaves the device. |
+| Error logs (failed URL, error message, timestamp, the site path where it happened, extension version, error stack) | `chrome.storage.local` (device only) | Lets the user review and export download failures from the popup. Never leaves the device. Page query strings and fragments are stripped before storage. |
 
 No account information, browsing history, credentials, or identifiers are stored.
 
@@ -23,6 +23,7 @@ When the user likes a tweet on Twitter/X or bookmarks an artwork on Pixiv, the c
 
 1. **Twitter/X media and Pixiv AJAX endpoints** — requested directly by the browser as part of the download the user explicitly triggered.
 2. **Pixiv image proxy** — Pixiv's image CDN (`i.pximg.net`) requires a `pixiv.net` Referer header. Pixiv image requests may be forwarded through the developer's Cloudflare Worker reverse proxy (`pixiv.zhongrui.app`), which only adds this header and forwards the image bytes. The proxy does not store, log, or analyze any data. No account or identity information is included in these requests.
+3. **Pixiv direct fallback** — when the proxy is unreachable, the extension fetches the same image from `i.pximg.net` itself (with the required Referer) and hands the bytes to Chrome's download manager; no third party is involved beyond Pixiv's own CDN.
 
 ## Permissions and why they are needed
 
@@ -47,7 +48,7 @@ Questions about this policy: **rayleighzhong@gmail.com**
 
 # 隐私政策 — 下载 Twitter 和 Pixiv 原图
 
-_最后更新：2026-10-04 · 适用于 1.3.x 及之后版本_
+_最后更新：2026-11-16 · 适用于 1.4.x 及之后版本_
 
 ## 概述
 
@@ -58,7 +59,7 @@ _最后更新：2026-10-04 · 适用于 1.3.x 及之后版本_
 | 数据 | 位置 | 用途 |
 |---|---|---|
 | 文件名格式偏好、平台开关、通知开关 | `chrome.storage.sync`（用户自己的 Chrome 账户） | 记住用户设置。仅通过用户自己的 Chrome 同步，绝不会发送给开发者。 |
-| 错误日志（失败的 URL、错误信息、时间戳） | `chrome.storage.local`（仅本机） | 供用户在弹窗中查看、导出下载失败记录。永不离开设备。 |
+| 错误日志（失败的 URL、错误信息、时间戳、发生页面的站点路径、扩展版本、错误堆栈） | `chrome.storage.local`（仅本机） | 供用户在弹窗中查看、导出下载失败记录。永不离开设备。存储前会去掉页面查询参数和锚点。 |
 
 不存储任何账户信息、浏览历史、凭据或用户标识。
 
@@ -70,6 +71,7 @@ _最后更新：2026-10-04 · 适用于 1.3.x 及之后版本_
 
 1. **Twitter/X 媒体与 Pixiv AJAX 接口** — 由浏览器直接请求，属于用户主动触发的下载行为的一部分。
 2. **Pixiv 图片代理** — Pixiv 图床（`i.pximg.net`）要求携带 `pixiv.net` 的 Referer 请求头。Pixiv 图片请求可能经由开发者自建的 Cloudflare Worker 反向代理（`pixiv.zhongrui.app`）转发，该代理仅添加此请求头并转发图片数据，不存储、不记录、不分析任何内容。这些请求中不包含任何账户或身份信息。
+3. **Pixiv 直连兜底** — 代理不可用时，扩展自行向 `i.pximg.net` 获取同一张原图（携带必需的 Referer），再把图片字节交给 Chrome 下载器保存；除 Pixiv 自身 CDN 外不涉及任何第三方。
 
 ## 权限及其用途
 
