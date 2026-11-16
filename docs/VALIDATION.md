@@ -54,8 +54,10 @@
 4. 任何核心流程失败先修复；外部认证/服务阻塞则报告 BLOCKED，不隐藏、也不伪造通过。
 5. 发布清单：版本一致 → 测试 → 构建/ZIP 校验 → 浏览器验证 → 提交源码及构建产物 → 推送并核验 → 上传 ZIP → 提交审核并核验。不能只完成 ZIP。
 
-## 外部发布状态（上传后回填）
+## 外部发布状态（2026-11-16 回填）
 
-- Gitea 提交/推送：待记录。
-- 标签：待记录。
-- 商店上传版本与提交审核状态：待记录。
+- 提交：`abd5356`（1.4.0 基线）→ `27df3f3`（1.4.1 修复），工作区已清空。
+- Gitea：`main = 27df3f3`、tag `v1.4.1`，`git ls-remote` 已核验（origin：gitea.xixi.heiyu.space/zhongzijian/DownloadTwitterPicture）。
+- GitHub 镜像：同上 hash，已核验（github：rayleighzhongrui/DownloadTwitterPictur）。
+- 商店：ZIP（SHA-256 `a6f34201…`，117.47 KB）已上传为草稿 v1.4.1 并提交审核，状态 **Pending review**；Published 仍为 1.3.1。**待审核 ≠ 已上线**，通过后按勾选自动发布。
+- 商店上传方式备注：开发者后台的文件输入框会吞掉 CDP setFileInputFiles 与跨调用 DataTransfer 注入；成功路径是打开上传对话框后在同一渲染周期内注入 File 并派发 change 事件（成功后输入框被清空并跳转，Package 页 Draft 变为 1.4.1）。
